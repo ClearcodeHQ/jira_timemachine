@@ -1,0 +1,16 @@
+{
+  "source_jira": {
+    "url": "https://source.atlassian.net",
+    "login": "login",
+    "email": "login@login.com",
+    "password": "pass",
+    "project_key": "JIRA"
+  },
+  "destination_jira": {
+    "url": "https://destination.atlassian.net",
+    "login": "login",
+    "email": "login@login.com",
+    "password": "pass",
+    "issue": "JIRA-123"
+  }
+}
