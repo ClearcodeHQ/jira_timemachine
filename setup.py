@@ -23,8 +23,6 @@ requirements = [
     'Click',
     'jira',
     'arrow',
-    'Selenium',
-    'splinter',
     'typing',
 ]
 
@@ -41,7 +39,7 @@ extras_require = {
 setup(
     name='jira_timemachine',
     version=package_version,
-    description='It\'s a python package template only',
+    description='Synchronize worklogs between Jira instances',
     long_description=(
         read('README.rst') + '\n\n' + read('CHANGES.rst')
     ),

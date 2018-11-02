@@ -7,7 +7,7 @@
 import re
 import json
 import logging
-from datetime import timedelta
+from datetime import date, timedelta
 import time
 from typing import Iterator, Dict, List, IO, Any, TypeVar, Callable
 
@@ -15,10 +15,7 @@ import click
 import arrow
 from jira import JIRA
 import jira
-from selenium.webdriver.chrome.options import Options
-from splinter import Browser
 import requests
-from requests.utils import add_dict_to_cookiejar
 
 __version__ = '0.0.0'
 
@@ -65,65 +62,40 @@ class TempoClient(object):
     """
     A client for Tempo Cloud APIs.
 
-    Since there is no documented authentication method for it, we use Selenium to obtain Tempo context and session from
-    the browser (as set by JIRA), later use Tempo REST API via requests.
-
-    Previous versions of Tempo have similar API documented at <https://tempoplugin.jira.com/wiki/display/JTS/Tempo+REST+APIs>.
+    See <https://tempo-io.github.io/tempo-api-docs/> for the API documentation.
     """
 
-    def __init__(self, jira_url, email, jira_password):
-        # type: (str, str, str) -> None
-        """Obtain Tempo credentials from JIRA."""
-        chrome_options = Options()
-        chrome_options.add_argument('--headless')
-        chrome_options.add_argument('--disable-gpu')
-        browser = Browser('chrome', options=chrome_options)
-        browser.visit(jira_url)
-        browser.find_by_id('username').fill(email)
-        browser.find_by_id('login-submit').click()
-        wait(lambda: browser.find_by_id('password').visible)
-        browser.find_by_id('password').fill(jira_password)
-        browser.find_by_id('login-submit').click()
-        wait(lambda: 'Dashboard.jspa' in browser.url)
-        browser.visit(jira_url + '/plugins/servlet/ac/is.origo.jira.tempo-plugin/tempo-my-work#!')
-
-        def get_tempo_frame():
-            # type: () -> Any
-            for frame in browser.find_by_tag('iframe'):
-                if frame['id'].startswith('is.origo.jira.tempo-plugin'):
-                    return frame
-            return None
-
-        frame = wait(get_tempo_frame)
-        with browser.get_iframe(frame['id']) as iframe:
-            tempo_state = json.loads(iframe.find_by_id('tempo-container')['data-initial-state'])
+    def __init__(self, tempo_token):
+        # type: (str) -> None
+        """Prepare session for Tempo API requests."""
         self.session = requests.Session()
-        self.session.cookies = add_dict_to_cookiejar(
-            self.session.cookies,
-            {'tempo_session': tempo_state['tempoSession']})
         self.session.headers.update({
-            'Tempo-Context': tempo_state['tempoContext'],
-            'Tempo-Session': tempo_state['tempoSession'],
-            'Origin': 'https://app.tempo.io',
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36',
+            'Authorization': 'Bearer %s' % tempo_token
         })
 
-    def get_worklogs(self, data):
-        # type: (dict) -> List[dict]
+    def get_worklogs(self, from_date, username):
+        # type: (date, str) -> Iterator[dict]
         """
-        Return worklogs matching specified criteria.
-
-        :param dict data: parameters for worklog filtering: known used ones are "from", "to" (specifying a date), "worker" (user's name)
+        Return all recent worklogs for the specified user.
 
         :rtype: list
         :returns: list of dicts representing worklogs
         """
-        res = self.session.post(
-            'https://app.tempo.io/rest/tempo-timesheets/4/worklogs/search',
-            data=json.dumps(data))
-        return res.json()
+        url = 'https://api.tempo.io/2/worklogs/user/%s?from=%s&to=%s' % (username, from_date, date.today())
+        while url:
+            res = self.session.get(
+                url,
+                allow_redirects=False,
+            )
+            try:
+                res.raise_for_status()
+            except:
+                click.echo(res.content)
+                raise
+            response_data = res.json()
+            for row in response_data['results']:
+                yield row
+            url = response_data['metadata'].get('next')
 
     def update_worklog(self, worklog_id, data):
         # type: (int, dict) -> None
@@ -133,10 +105,14 @@ class TempoClient(object):
         :param dict data: worklog parameters
         """
         res = self.session.put(
-            'https://app.tempo.io/rest/tempo-timesheets/4/worklogs/%d/' % worklog_id,
+            'https://api.tempo.io/2/worklogs/%d' % worklog_id,
             data=json.dumps(data)
         )
-        res.raise_for_status()
+        try:
+            res.raise_for_status()
+        except:
+            click.echo(res.content)
+            raise
 
     def post_worklog(self, data):
         # type: (dict) -> None
@@ -146,7 +122,7 @@ class TempoClient(object):
         :param dict data: worklog parameters
         """
         res = self.session.post(
-            'https://app.tempo.io/rest/tempo-timesheets/4/worklogs',
+            'https://api.tempo.io/2/worklogs',
             data=json.dumps(data)
         )
         try:
@@ -181,17 +157,13 @@ def timemachine(config, days):
     destination_user = destination_jira.user(config_dict['destination_jira']['login'])
     destination_jira_issue = destination_jira.issue(config_dict['destination_jira']['issue'])
     source_worklogs = {}  # type: Dict[int, Any]
-    sorce_url = config_dict['source_jira']['url']
-    source_tempo = TempoClient(
-        sorce_url, config_dict['source_jira']['email'], config_dict['source_jira']['password']
-    )
-    destination_tempo = TempoClient(
-        destination_url, config_dict['destination_jira']['email'], config_dict['destination_jira']['password']
-    )
+    source_url = config_dict['source_jira']['url']
+    source_tempo = TempoClient(config_dict['source_jira']['tempo_token'])
+    destination_tempo = TempoClient(config_dict['destination_jira']['tempo_token'])
 
     if utcnow - timedelta(days=days) < TEMPO_EPOCH:
         source_jira = JIRA(
-            sorce_url,
+            source_url,
             basic_auth=(config_dict['source_jira']['login'], config_dict['source_jira']['password'])
         )
         source_user = source_jira.user(config_dict['source_jira']['login'])
@@ -212,31 +184,39 @@ def timemachine(config, days):
                 }
                 click.echo(worklog_msg.format(**source_worklogs[int(worklog.id)]))
 
-    for worklog in source_tempo.get_worklogs({
-            'from': str((utcnow - timedelta(days=days)).date()),
-            'worker': [config_dict['source_jira']['login']]}):
-        if worklog['worker'] != config_dict['source_jira']['login']:
+    for worklog in source_tempo.get_worklogs(
+            from_date=(utcnow - timedelta(days=days)).date(),
+            username=config_dict['source_jira']['login'],
+    ):
+        if worklog['author']['username'] != config_dict['source_jira']['login']:
             continue
-        if arrow.get(worklog['started']) < utcnow - timedelta(days=days):
-            click.echo('Skip, update too long ago {0}'.format(worklog['started']))
+        start = arrow.get('{startDate} {startTime}'.format(**worklog))
+        if start < utcnow - timedelta(days=days):
+            click.echo('Skip, update too long ago {0}'.format(start))
             continue
-        if arrow.get(worklog['started']) < TEMPO_EPOCH:
-            click.echo('Skip, update before Tempo epoch {0}'.format(worklog['started']))
+        if start < TEMPO_EPOCH:
+            click.echo('Skip, update before Tempo epoch {0}'.format(start))
             continue
-        source_worklogs[int(worklog['originId'])] = {
+        source_worklogs[int(worklog['jiraWorklogId'])] = {
             'timeSpentSeconds': worklog['timeSpentSeconds'],
-            'id': worklog['originId'],
+            # Each Tempo worklog has separate Jira and Tempo worklog IDs. Use Jira IDs so worklogs can be idempotently
+            # synced if a Jira instance adds/removes Tempo.
+            'id': worklog['jiraWorklogId'],
             'issue': worklog['issue']['key'],
-            'author': worklog['worker'],
-            'date': arrow.get(worklog['started'])
+            'author': worklog['author']['username'],
+            'date': arrow.get(start)
         }
 
-    for ccworklog in destination_tempo.get_worklogs({
-            'from': str((utcnow - timedelta(days=days)).date()),
-            'worker': [config_dict['destination_jira']['login']],
-            'taskId': [destination_jira_issue.id],
-    }):
-        match = auto_worklog.match(ccworklog['comment'])
+    # Query all recent user's worklogs and then filter by task. It should be faster than querying by issue and
+    # filtering by user if several users sync worklogs to the same issue and the user doesn't have too many worklogs in
+    # other issues (e.g. logging time to the destination Jira mostly via the timemachine).
+    for ccworklog in destination_tempo.get_worklogs(
+            from_date=(utcnow - timedelta(days=days)).date(),
+            username=config_dict['destination_jira']['login'],
+    ):
+        if ccworklog['issue']['key'] != config_dict['destination_jira']['issue']:
+            continue
+        match = auto_worklog.match(ccworklog['description'])
         if not match:
             continue
         worklog_id = match.groupdict()['id']
@@ -245,22 +225,21 @@ def timemachine(config, days):
             continue
         source_worklog = source_worklogs[int(worklog_id)]
         comment = worklog_msg.format(**source_worklog)
-        if ccworklog['comment'] == comment:
+        if ccworklog['description'] == comment:
             del source_worklogs[int(worklog_id)]
-            click.echo(u"Nothing changed for {0}".format(ccworklog['comment']))
+            click.echo(u"Nothing changed for {0}".format(ccworklog['description']))
             continue
         else:
-            print(u"Updating worklog {0} to {1}".format(ccworklog['comment'], comment))
+            print(u"Updating worklog {0} to {1}".format(ccworklog['description'], comment))
             destination_tempo.update_worklog(
-                ccworklog['originId'], {
-                    'attributes': {},
-                    'billableSeconds': None,
-                    'comment': worklog_msg.format(**source_worklog),
-                    'originId':  ccworklog['originId'],
-                    'originTaskId': destination_jira_issue.id,
-                    'started': source_worklog['date'].format('YYYY-MM-DDTHH:mm:ss.SSS'),
+                ccworklog['tempoWorklogId'], {
+                    'attributes': [],
+                    'authorUsername': destination_user.name,
+                    'description': worklog_msg.format(**source_worklog),
+                    'issueKey': ccworklog['issue']['key'],
+                    'startDate': source_worklog['date'].format('YYYY-MM-DD'),
+                    'startTime': source_worklog['date'].format('HH:mm:ss'),
                     'timeSpentSeconds': source_worklog['timeSpentSeconds'],
-                    'worker': destination_user.name,
                 })
             del source_worklogs[int(worklog_id)]
             continue
@@ -271,12 +250,11 @@ def timemachine(config, days):
 
         for source_worklog in worklogs:
             destination_tempo.post_worklog({
-                'attributes': {},
-                'comment': worklog_msg.format(**source_worklog),
-                'includeNonWorkingDays': False,
-                'originTaskId': destination_jira_issue.id,
-                'remainingEstimate': 0,
-                'started': source_worklog['date'].format('YYYY-MM-DDTHH:mm:ss.SSS'),
+                'issueKey': config_dict['destination_jira']['issue'],
                 'timeSpentSeconds': source_worklog['timeSpentSeconds'],
-                'worker': destination_user.name,
+                'startDate': source_worklog['date'].format('YYYY-MM-DD'),
+                'startTime': source_worklog['date'].format('HH:mm:ss'),
+                'description': worklog_msg.format(**source_worklog),
+                'authorUsername': destination_user.name,
+                'attributes': [],
             })

@@ -4,13 +4,15 @@
     "login": "login",
     "email": "login@login.com",
     "password": "pass",
-    "project_key": "JIRA"
+    "project_key": "JIRA",
+    "tempo_token": ""
   },
   "destination_jira": {
     "url": "https://destination.atlassian.net",
     "login": "login",
     "email": "login@login.com",
     "password": "pass",
-    "issue": "JIRA-123"
+    "issue": "JIRA-123",
+    "tempo_token": ""
   }
 }
