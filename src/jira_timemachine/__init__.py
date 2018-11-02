@@ -4,9 +4,11 @@
 #
 # This module is part of jira_timemachine and is released under
 # the MIT License (MIT): http://opensource.org/licenses/MIT
+
+"""Module for synchronization of Jira worklogs between different instances."""
+
 import re
 import json
-import logging
 from datetime import date, timedelta
 import time
 from typing import Iterator, Dict, List, IO, Any, TypeVar, Callable
@@ -19,8 +21,6 @@ import requests
 
 __version__ = '0.0.0'
 
-logger = logging.getLogger(__name__)
-
 
 TEMPO_EPOCH = arrow.Arrow(2017, 6, 9)
 """
@@ -30,32 +30,17 @@ Older ones are both in Tempo and JIRA REST API, while they have different IDs, s
 """
 
 
-T = TypeVar('T')
-
-
-def wait(callback, timeout=6):
-    # type: (Callable[[], T], int) -> T
-    """Retry *callback* until it returns a truthy value and return that value."""
-    for _ in xrange(timeout * 10):
-        result = callback()
-        if result:
-            return result
-        time.sleep(0.1)
-    else:
-        raise ValueError('Timeout calling %s' % callback)
-
-
-def issues(jira, query):
+def issues(jira_instance, query):
     # type: (JIRA, str) -> Iterator[jira.Issue]
     """Issues iterator"""
     issue_index = 1
     while True:
-        issues = jira.search_issues(jql_str=query, startAt=issue_index, maxResults=50)
-        for issue in issues:
+        search_results = jira_instance.search_issues(jql_str=query, startAt=issue_index, maxResults=50)
+        for issue in search_results:
             yield issue
         issue_index += 51
-        if len(issues) < 50:
-            raise StopIteration()
+        if len(search_results) < 50:
+            return
 
 
 class TempoClient(object):
@@ -137,25 +122,17 @@ class TempoClient(object):
 @click.option('--days', help="How many days back to look", default=1)
 def timemachine(config, days):
     # type: (IO[str], int) -> None
+    """Copy worklogs from source Jira issues to the destination Jira issue."""
     config_dict = json.load(config)
     utcnow = arrow.utcnow()
 
-    auto_worklog = re.compile("TIMEMACHINE_WID (?P<id>\d+).*")
-    """regexp to detect the automatic worklog in Destination JIRA."""
+    # Regexp to detect the automatic worklog in Destination JIRA.
+    auto_worklog = re.compile(r'TIMEMACHINE_WID (?P<id>\d+).*')
+    # Automatic worklog message.
     worklog_msg = u"TIMEMACHINE_WID {id}: {author} spent {timeSpentSeconds}s on {issue} at {date}"
-    """Automatic worklog message."""
+    # JQL Query based to list all issues to read worklogs from.
     issue_jql = "project = {project_key} AND updated >= -{0}d ORDER BY key ASC"
-    """JQL Query based to list all issues to read worklogs from."""
 
-
-
-    destination_url = config_dict['destination_jira']['url']
-    destination_jira = JIRA(
-        destination_url,
-        basic_auth=(config_dict['destination_jira']['login'], config_dict['destination_jira']['password'])
-    )
-    destination_user = destination_jira.user(config_dict['destination_jira']['login'])
-    destination_jira_issue = destination_jira.issue(config_dict['destination_jira']['issue'])
     source_worklogs = {}  # type: Dict[int, Any]
     source_url = config_dict['source_jira']['url']
     source_tempo = TempoClient(config_dict['source_jira']['tempo_token'])
@@ -230,11 +207,11 @@ def timemachine(config, days):
             click.echo(u"Nothing changed for {0}".format(ccworklog['description']))
             continue
         else:
-            print(u"Updating worklog {0} to {1}".format(ccworklog['description'], comment))
+            click.echo(u"Updating worklog {0} to {1}".format(ccworklog['description'], comment))
             destination_tempo.update_worklog(
                 ccworklog['tempoWorklogId'], {
                     'attributes': [],
-                    'authorUsername': destination_user.name,
+                    'authorUsername': config_dict['destination_jira']['login'],
                     'description': worklog_msg.format(**source_worklog),
                     'issueKey': ccworklog['issue']['key'],
                     'startDate': source_worklog['date'].format('YYYY-MM-DD'),
@@ -255,6 +232,6 @@ def timemachine(config, days):
                 'startDate': source_worklog['date'].format('YYYY-MM-DD'),
                 'startTime': source_worklog['date'].format('HH:mm:ss'),
                 'description': worklog_msg.format(**source_worklog),
-                'authorUsername': destination_user.name,
+                'authorUsername': config_dict['destination_jira']['login'],
                 'attributes': [],
             })
