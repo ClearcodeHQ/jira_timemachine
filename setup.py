@@ -24,6 +24,7 @@ requirements = [
     'jira',
     'arrow',
     'typing',
+    'attrs',
 ]
 
 test_requires = [
