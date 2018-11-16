@@ -17,20 +17,11 @@ def read(fname):
     :returns: file contents
     :rtype: str
     """
-    return open(os.path.join(here, fname)).read()
+    with open(os.path.join(here, fname)) as f:
+        return f.read()
 
-requirements = [
-    'Click',
-    'jira',
-    'arrow',
-    'typing',
-    'attrs',
-]
-
-test_requires = [
-    'pytest',
-    'pytest-cov'
-]
+requirements = read('requirements.txt')
+test_requires = read('requirements-tests.txt')
 
 extras_require = {
     'docs': ['sphinx'],

@@ -27,3 +27,20 @@ is used to choose the target issue.
 Running ``timemachine`` again does not move existing worklogs. Do not remove destination issues from the ``issue_map``
 while they have matching worklogs: only known destination issues are searched for copied worklogs, ones present
 elsewhere will be duplicated.
+
+Use via Docker
+--------------
+
+Build the image::
+
+  docker build -t timemachine .
+
+(This installs packages and runs linters.)
+
+Run ``timemachine``::
+
+  docker run -v $PWD/example_config:/config timemachine timemachine --config /config/config.json
+
+Run ``timecheck``::
+
+  docker run -v $PWD/example_config:/config timemachine timecheck --config /config/config.json

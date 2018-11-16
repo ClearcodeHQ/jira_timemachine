@@ -1,0 +1,9 @@
+*.pyc
+.dockerignore
+.git
+.github
+.mypy_cache
+Dockerfile
+docs
+example_config
+src/*.egg-info

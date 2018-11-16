@@ -1,0 +1,5 @@
+arrow==0.12.1
+attrs==18.2.0
+Click==7.0
+jira==2.0.0
+typing==3.6.6
