@@ -24,14 +24,6 @@ import requests
 __version__ = '0.0.0'
 
 
-TEMPO_EPOCH = arrow.Arrow(2017, 6, 9)
-"""
-The date since which worklogs are available in Tempo only.
-
-Older ones are both in Tempo and JIRA REST API, while they have different IDs, so we must use one source for them only.
-"""
-
-
 @attr.s
 class Worklog(object):
     """JIRA or Tempo worklog."""
@@ -51,34 +43,6 @@ class Worklog(object):
     author = attr.ib(type=unicode)
     issue = attr.ib(type=unicode)
 
-    @classmethod
-    def from_tempo(cls, worklog):
-        # type: (dict) -> Worklog
-        """Return a worklog from Tempo API response."""
-        return cls(
-            id=int(worklog['jiraWorklogId']),
-            tempo_id=int(worklog['tempoWorklogId']),
-            author=worklog['author']['username'],
-            started=arrow.get('{startDate} {startTime}'.format(**worklog)),
-            time_spent_seconds=int(worklog['timeSpentSeconds']),
-            issue=worklog['issue']['key'],
-            description=worklog['description'],
-        )
-
-    @classmethod
-    def from_jira(cls, worklog):
-        # type: (jira.Worklog) -> Worklog
-        """Return a worklog from JIRA API response."""
-        return cls(
-            id=worklog.id,
-            tempo_id=None,
-            author=worklog.author.username,
-            time_spent_seconds=worklog.timeSpentSeconds,
-            issue=worklog.issue.key,
-            started=arrow.get(worklog.started),
-            description=worklog.comment,
-        )
-
     def to_tempo(self):
         # type: () -> dict
         """Return self as dict for use in Tempo API."""
@@ -91,19 +55,6 @@ class Worklog(object):
             'startTime': self.started.format('HH:mm:ss'),
             'timeSpentSeconds': self.time_spent_seconds,
         }
-
-
-def issues(jira_instance, query):
-    # type: (JIRA, str) -> Iterator[jira.Issue]
-    """Issues iterator"""
-    issue_index = 1
-    while True:
-        search_results = jira_instance.search_issues(jql_str=query, startAt=issue_index, maxResults=50)
-        for issue in search_results:
-            yield issue
-        issue_index += 51
-        if len(search_results) < 50:
-            return
 
 
 class TempoClient(object):
@@ -126,8 +77,8 @@ class TempoClient(object):
         """
         Return all recent worklogs for the specified user.
 
-        :rtype: list
-        :returns: list of dicts representing worklogs
+        :rtype: iterator
+        :returns: yields Worklog instances
         """
         url = 'https://api.tempo.io/2/worklogs/user/%s?from=%s&to=%s' % (username, from_date, date.today())
         while url:
@@ -142,7 +93,17 @@ class TempoClient(object):
                 raise
             response_data = res.json()
             for row in response_data['results']:
-                yield Worklog.from_tempo(row)
+                if row['author']['username'] != username:
+                    continue
+                yield Worklog(
+                    id=int(row['jiraWorklogId']),
+                    tempo_id=int(row['tempoWorklogId']),
+                    author=row['author']['username'],
+                    started=arrow.get('{startDate} {startTime}'.format(**row)),
+                    time_spent_seconds=int(row['timeSpentSeconds']),
+                    issue=row['issue']['key'],
+                    description=row['description'],
+                )
             url = response_data['metadata'].get('next')
 
     def update_worklog(self, worklog):
@@ -182,6 +143,62 @@ class TempoClient(object):
             raise
 
 
+class JIRAClient(object):
+    """A client for JIRA API."""
+
+    _ISSUE_JQL = 'project = {project_key} AND updated >= "{0}" ORDER BY key ASC'
+    """JQL query format for listing all issues with worklogs to read."""
+
+    def __init__(self, config):
+        # type: (dict) -> None
+        """Initialize with credentials from the *config* dict."""
+        self._login = config['login']
+        self._jira = JIRA(
+            config['url'],
+            basic_auth=(config['email'], config['jira_token'])
+        )
+        user = self._jira.current_user()
+        if self._login != user:
+            raise click.ClickException('Logged in as {} but {} specified in config'.format(user, self._login))
+        self._project_key = config['project_key']
+
+
+    def _issues(self, query):
+        # type: (str) -> Iterator[jira.Issue]
+        """Issues iterator."""
+        issue_index = 1
+        while True:
+            search_results = self._jira.search_issues(jql_str=query, startAt=issue_index, maxResults=50)
+            for issue in search_results:
+                yield issue
+            issue_index += 51
+            if len(search_results) < 50:
+                return
+
+    def get_worklogs(self, from_date, username):
+        # type: (date, str) -> Iterator[Worklog]
+        """
+        Return all recent worklogs for the specified user.
+
+        :rtype: iterator
+        :returns: yields Worklog instances
+        """
+        for issue in self._issues(self._ISSUE_JQL.format(from_date, project_key=self._project_key)):
+            for jira_worklog in self._jira.worklogs(issue):
+                worklog = Worklog(
+                    id=int(jira_worklog.id),
+                    tempo_id=None,
+                    author=jira_worklog.author.name,
+                    time_spent_seconds=int(jira_worklog.timeSpentSeconds),
+                    issue=issue.key,
+                    started=arrow.get(jira_worklog.started),
+                    description=getattr(jira_worklog, 'comment', u''),
+                )
+                if not worklog.author == username:
+                    continue
+                yield worklog
+
+
 @click.command()
 @click.option('--config', help="Config path", type=click.File())
 @click.option('--days', help="How many days back to look", default=1)
@@ -195,44 +212,33 @@ def timemachine(config, days):
     auto_worklog = re.compile(r'TIMEMACHINE_WID (?P<id>\d+).*')
     # Automatic worklog message.
     worklog_msg = u"TIMEMACHINE_WID {0.id}: {0.author} spent {0.time_spent_seconds}s on {0.issue} at {0.started}"
-    # JQL Query based to list all issues to read worklogs from.
-    issue_jql = "project = {project_key} AND updated >= -{0}d ORDER BY key ASC"
 
     source_worklogs = {}  # type: Dict[int, Worklog]
-    source_url = config_dict['source_jira']['url']
-    source_tempo = TempoClient(config_dict['source_jira']['tempo_token'])
     destination_tempo = TempoClient(config_dict['destination_jira']['tempo_token'])
 
-    if utcnow - timedelta(days=days) < TEMPO_EPOCH:
-        source_jira = JIRA(
-            source_url,
-            basic_auth=(config_dict['source_jira']['login'], config_dict['source_jira']['jira_token'])
-        )
-        for issue in issues(source_jira, issue_jql.format(days, project_key=config_dict['source_jira']['project_key'])):
-            for jira_worklog in source_jira.worklogs(issue):
-                worklog = Worklog.from_jira(jira_worklog)
-                if not worklog.author == config_dict['source_jira']['login']:
-                    # click.echo(u'Skip, worklog author not in map {0}'.format(worklog.author))
-                    continue
-                if arrow.get(worklog.started) < utcnow - timedelta(days=days):
-                    click.echo('Skip, update too long ago {0}'.format(worklog.started))
-                    continue
-                source_worklogs[int(worklog.id)] = worklog
-
-    for worklog in source_tempo.get_worklogs(
-            from_date=(utcnow - timedelta(days=days)).date(),
-            username=config_dict['source_jira']['login'],
-    ):
-        if worklog.author != config_dict['source_jira']['login']:
-            continue
-        start = worklog.started
-        if start < utcnow - timedelta(days=days):
-            click.echo('Skip, update too long ago {0}'.format(start))
-            continue
-        if start < TEMPO_EPOCH:
-            click.echo('Skip, update before Tempo epoch {0}'.format(start))
-            continue
-        source_worklogs[worklog.id] = worklog
+    if 'tempo_token' in config_dict['source_jira']:
+        # Get worklogs from Tempo.
+        source_tempo = TempoClient(config_dict['source_jira']['tempo_token'])
+        for worklog in source_tempo.get_worklogs(
+                from_date=(utcnow - timedelta(days=days)).date(),
+                username=config_dict['source_jira']['login'],
+        ):
+            start = worklog.started
+            if start < utcnow - timedelta(days=days):
+                click.echo('Skip, update too long ago {0}'.format(start))
+                continue
+            source_worklogs[worklog.id] = worklog
+    else:
+        # Get worklogs from JIRA.
+        source_jira = JIRAClient(config_dict['source_jira'])
+        for worklog in source_jira.get_worklogs(
+                from_date=(utcnow - timedelta(days=days)).date(),
+                username=config_dict['source_jira']['login'],
+        ):
+            if arrow.get(worklog.started) < utcnow - timedelta(days=days):
+                click.echo('Skip, update too long ago {0}'.format(worklog.started))
+                continue
+            source_worklogs[int(worklog.id)] = worklog
 
     # Query all recent user's worklogs and then filter by task. It should be faster than querying by issue and
     # filtering by user if several users sync worklogs to the same issue and the user doesn't have too many worklogs in
