@@ -72,6 +72,7 @@ setup(
     entry_points={
         'console_scripts': [
             'timemachine = jira_timemachine:timemachine',
+            'timecheck = jira_timemachine:timecheck',
         ],
 
     },

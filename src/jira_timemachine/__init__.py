@@ -9,10 +9,11 @@
 
 import copy
 import re
+import itertools
 import json
 from datetime import date, timedelta
 import time
-from typing import Iterator, Dict, List, IO, TypeVar, Callable, Optional
+from typing import Iterator, Dict, List, IO, TypeVar, Callable, Optional, Tuple
 
 import attr
 import click
@@ -24,7 +25,7 @@ import requests
 __version__ = '0.0.0'
 
 
-@attr.s
+@attr.s  # pylint:disable=too-few-public-methods
 class Worklog(object):
     """JIRA or Tempo worklog."""
 
@@ -73,14 +74,17 @@ class TempoClient(object):
         })
 
     def get_worklogs(self, from_date, username):
-        # type: (date, str) -> Iterator[Worklog]
+        # type: (date, Optional[str]) -> Iterator[Worklog]
         """
         Return all recent worklogs for the specified user.
 
         :rtype: iterator
         :returns: yields Worklog instances
         """
-        url = 'https://api.tempo.io/2/worklogs/user/%s?from=%s&to=%s' % (username, from_date, date.today())
+        if username:
+            url = 'https://api.tempo.io/2/worklogs/user/%s?from=%s&to=%s' % (username, from_date, date.today())
+        else:
+            url = 'https://api.tempo.io/2/worklogs?from=%s&to=%s' % (from_date, date.today())
         while url:
             res = self.session.get(
                 url,
@@ -93,7 +97,7 @@ class TempoClient(object):
                 raise
             response_data = res.json()
             for row in response_data['results']:
-                if row['author']['username'] != username:
+                if username and row['author']['username'] != username:
                     continue
                 yield Worklog(
                     id=int(row['jiraWorklogId']),
@@ -143,7 +147,7 @@ class TempoClient(object):
             raise
 
 
-class JIRAClient(object):
+class JIRAClient(object):  # pylint:disable=too-few-public-methods
     """A client for JIRA API."""
 
     _ISSUE_JQL = 'project = {project_key} AND updated >= "{0}" ORDER BY key ASC'
@@ -176,7 +180,7 @@ class JIRAClient(object):
                 return
 
     def get_worklogs(self, from_date, username):
-        # type: (date, str) -> Iterator[Worklog]
+        # type: (date, Optional[str]) -> Iterator[Worklog]
         """
         Return all recent worklogs for the specified user.
 
@@ -194,9 +198,62 @@ class JIRAClient(object):
                     started=arrow.get(jira_worklog.started),
                     description=getattr(jira_worklog, 'comment', u''),
                 )
-                if not worklog.author == username:
+                if username and worklog.author != username:
                     continue
                 yield worklog
+
+
+def get_worklogs(config, since, all_users=False):
+    # type: (dict, arrow.Arrow, bool) -> Iterator[Worklog]
+    """
+    Yield user's recent worklogs.
+
+    :param dict config: JIRA configuration
+    :param arrow.Arrow since: earliest start time of yielded worklogs
+    :param bool all_users: if True, yield also worklogs from other users if available
+    """
+    if 'tempo_token' in config:
+        # Get worklogs from Tempo.
+        source_tempo = TempoClient(config['tempo_token'])
+        for worklog in source_tempo.get_worklogs(
+                since.date(),
+                username=config['login'] if not all_users else None,
+        ):
+            start = worklog.started
+            if start < since:
+                click.echo('Skip, update too long ago {0}'.format(start))
+                continue
+            yield worklog
+    else:
+        # Get worklogs from JIRA.
+        source_jira = JIRAClient(config)
+        for worklog in source_jira.get_worklogs(
+                from_date=since.date(),
+                username=config['login'] if not all_users else None,
+        ):
+            if arrow.get(worklog.started) < since:
+                click.echo('Skip, update too long ago {0}'.format(worklog.started))
+                continue
+            yield worklog
+
+
+def format_time(seconds):
+    # type: (int) -> str
+    """
+    Return *seconds* in a human-readable format (e.g. 25h 15m 45s).
+
+    Unlike `timedelta`, we don't aggregate it into days: it's not useful when reporting logged work hours.
+    """
+    out = []
+    if seconds > 3599:
+        out.append('%sh' % (seconds // 3600))
+        seconds = seconds % 3600
+    if seconds > 59:
+        out.append('%sm' % (seconds // 60))
+        seconds = seconds % 60
+    if seconds > 0:
+        out.append('%ss' % seconds)
+    return ' '.join(out)
 
 
 @click.command()
@@ -213,36 +270,14 @@ def timemachine(config, days):
     # Automatic worklog message.
     worklog_msg = u"TIMEMACHINE_WID {0.id}: {0.author} spent {0.time_spent_seconds}s on {0.issue} at {0.started}"
 
-    source_worklogs = {}  # type: Dict[int, Worklog]
-    destination_tempo = TempoClient(config_dict['destination_jira']['tempo_token'])
-
-    if 'tempo_token' in config_dict['source_jira']:
-        # Get worklogs from Tempo.
-        source_tempo = TempoClient(config_dict['source_jira']['tempo_token'])
-        for worklog in source_tempo.get_worklogs(
-                from_date=(utcnow - timedelta(days=days)).date(),
-                username=config_dict['source_jira']['login'],
-        ):
-            start = worklog.started
-            if start < utcnow - timedelta(days=days):
-                click.echo('Skip, update too long ago {0}'.format(start))
-                continue
-            source_worklogs[worklog.id] = worklog
-    else:
-        # Get worklogs from JIRA.
-        source_jira = JIRAClient(config_dict['source_jira'])
-        for worklog in source_jira.get_worklogs(
-                from_date=(utcnow - timedelta(days=days)).date(),
-                username=config_dict['source_jira']['login'],
-        ):
-            if arrow.get(worklog.started) < utcnow - timedelta(days=days):
-                click.echo('Skip, update too long ago {0}'.format(worklog.started))
-                continue
-            source_worklogs[int(worklog.id)] = worklog
+    source_worklogs = {
+        worklog.id: worklog
+        for worklog in get_worklogs(config_dict['source_jira'], utcnow - timedelta(days=days))}
 
     # Query all recent user's worklogs and then filter by task. It should be faster than querying by issue and
     # filtering by user if several users sync worklogs to the same issue and the user doesn't have too many worklogs in
     # other issues (e.g. logging time to the destination Jira mostly via the timemachine).
+    destination_tempo = TempoClient(config_dict['destination_jira']['tempo_token'])
     for ccworklog in destination_tempo.get_worklogs(
             from_date=(utcnow - timedelta(days=days)).date(),
             username=config_dict['destination_jira']['login'],
@@ -278,3 +313,31 @@ def timemachine(config, days):
             source_worklog.description = worklog_msg.format(source_worklog)
             source_worklog.author = config_dict['destination_jira']['login']
             destination_tempo.post_worklog(source_worklog)
+
+
+@click.command()
+@click.option('--config', help='Config path', type=click.File())
+@click.option(
+    '--since', help='Date from which to start listing (defaults to the start of the current month)', default='')
+@click.option('--pm', 'is_pm', help='Show time spent by all users', type=bool, default=False, is_flag=True)
+def timecheck(config, since, is_pm):
+    # type: (IO[str], str, bool) -> None
+    """List time spent per day and overall on the source JIRA."""
+    config_dict = json.load(config)
+    start = arrow.get(since) if since else arrow.utcnow().floor('month')
+    total = 0
+
+    def worklog_key(worklog):
+        # type: (Worklog) -> Tuple[date, unicode]
+        """Return the worklog grouping key."""
+        return (worklog.started.date(), worklog.author)
+
+    for (day, author), worklogs in itertools.groupby(
+            sorted(get_worklogs(config_dict['source_jira'], start, all_users=is_pm), key=worklog_key),
+            worklog_key,
+    ):
+        day_sum = sum(worklog.time_spent_seconds for worklog in worklogs)
+        total += day_sum
+        click.echo('{} {} spent {}'.format(day, author, format_time(day_sum)))
+
+    click.echo('Total {}'.format(format_time(total)))
