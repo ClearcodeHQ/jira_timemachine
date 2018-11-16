@@ -1,4 +1,4 @@
-FROM python:2.7 as app
+FROM python:3.7 as app
 
 WORKDIR /usr/src/app
 # Install required dependencies and cache test dependencies, so they won't be redownloaded when updating after the code
@@ -14,6 +14,7 @@ FROM app as tests
 # Run tests here.
 RUN pip install .[tests]
 RUN pylint src/jira_timemachine
+RUN mypy src/jira_timemachine tests
 RUN pytest
 
 FROM app

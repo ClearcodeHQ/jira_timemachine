@@ -13,11 +13,12 @@ import itertools
 import json
 from datetime import date, timedelta
 import time
-from typing import Iterator, Dict, List, IO, TypeVar, Callable, Optional, Tuple, Union
+from typing import Iterator, Dict, List, IO, TypeVar, Callable, Optional, Tuple, Union, Text
 
 import attr
 import click
 import arrow
+import six
 from jira import JIRA
 import jira
 import requests
@@ -40,9 +41,9 @@ class Worklog(object):
     """Tempo worklog ID or None for plain Jira worklogs."""
     started = attr.ib(type=arrow.Arrow)
     time_spent_seconds = attr.ib(type=int)
-    description = attr.ib(type=unicode)
-    author = attr.ib(type=unicode)
-    issue = attr.ib(type=unicode)
+    description = attr.ib(type=Text)
+    author = attr.ib(type=Text)
+    issue = attr.ib(type=Text)
 
     def to_tempo(self):
         # type: () -> dict
@@ -120,8 +121,8 @@ class TempoClient(object):
         if worklog.tempo_id is None:
             raise ValueError('The worklog to update must have a Tempo ID')
         res = self.session.put(
-            'https://api.tempo.io/2/worklogs/%d' % worklog.tempo_id,
-            data=json.dumps(worklog.to_tempo())
+            b'https://api.tempo.io/2/worklogs/%d' % worklog.tempo_id,
+            data=json.dumps(worklog.to_tempo()).encode('utf-8')
         )
         try:
             res.raise_for_status()
@@ -137,8 +138,8 @@ class TempoClient(object):
         :param dict worklog: new worklog data
         """
         res = self.session.post(
-            'https://api.tempo.io/2/worklogs',
-            data=json.dumps(worklog.to_tempo())
+            b'https://api.tempo.io/2/worklogs',
+            data=json.dumps(worklog.to_tempo()).encode('utf-8')
         )
         try:
             res.raise_for_status()
@@ -296,7 +297,7 @@ def timemachine(config, days):
     # mapping from source JIRA issue to a destination JIRA issue (config_dict['issue_map']) overriding it for specific
     # issues. If a worklog is already copied into any of these issues, it might get updated there. New worklogs are
     # created as specified in the mapping. No worklogs are moved or deleted.
-    dest_issues = {config_dict['destination_jira']['issue']} | set(config_dict.get('issue_map', {}).itervalues())
+    dest_issues = {config_dict['destination_jira']['issue']} | set(six.itervalues(config_dict.get('issue_map', {})))
 
     # Query all recent user's worklogs and then filter by task. It should be faster than querying by issue and
     # filtering by user if several users sync worklogs to the same issue and the user doesn't have too many worklogs in
@@ -347,7 +348,7 @@ def timecheck(config, since, is_pm):
     total = 0
 
     def worklog_key(worklog):
-        # type: (Worklog) -> Tuple[date, unicode]
+        # type: (Worklog) -> Tuple[date, Text]
         """Return the worklog grouping key."""
         return (worklog.started.date(), worklog.author)
 
