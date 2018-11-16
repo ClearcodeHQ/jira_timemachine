@@ -13,7 +13,7 @@ import itertools
 import json
 from datetime import date, timedelta
 import time
-from typing import Iterator, Dict, List, IO, TypeVar, Callable, Optional, Tuple
+from typing import Iterator, Dict, List, IO, TypeVar, Callable, Optional, Tuple, Union
 
 import attr
 import click
@@ -203,6 +203,14 @@ class JIRAClient(object):  # pylint:disable=too-few-public-methods
                 yield worklog
 
 
+def get_client(config):
+    # type: (dict) -> Union[TempoClient, JIRAClient]
+    """Return a client for the source of worklogs specified in *config*."""
+    if 'tempo_token' in config:
+        return TempoClient(config['tempo_token'])
+    return JIRAClient(config)
+
+
 def get_worklogs(config, since, all_users=False):
     # type: (dict, arrow.Arrow, bool) -> Iterator[Worklog]
     """
@@ -212,29 +220,14 @@ def get_worklogs(config, since, all_users=False):
     :param arrow.Arrow since: earliest start time of yielded worklogs
     :param bool all_users: if True, yield also worklogs from other users if available
     """
-    if 'tempo_token' in config:
-        # Get worklogs from Tempo.
-        source_tempo = TempoClient(config['tempo_token'])
-        for worklog in source_tempo.get_worklogs(
-                since.date(),
-                username=config['login'] if not all_users else None,
-        ):
-            start = worklog.started
-            if start < since:
-                click.echo('Skip, update too long ago {0}'.format(start))
-                continue
-            yield worklog
-    else:
-        # Get worklogs from JIRA.
-        source_jira = JIRAClient(config)
-        for worklog in source_jira.get_worklogs(
-                from_date=since.date(),
-                username=config['login'] if not all_users else None,
-        ):
-            if arrow.get(worklog.started) < since:
-                click.echo('Skip, update too long ago {0}'.format(worklog.started))
-                continue
-            yield worklog
+    for worklog in get_client(config).get_worklogs(
+            from_date=since.date(),
+            username=config['login'] if not all_users else None,
+    ):
+        if worklog.started < since:
+            click.echo('Skip, update too long ago {0}'.format(worklog.started))
+            continue
+        yield worklog
 
 
 def format_time(seconds):
@@ -256,6 +249,33 @@ def format_time(seconds):
     return ' '.join(out)
 
 
+AUTO_WORKLOG = re.compile(r'TIMEMACHINE_WID (?P<id>\d+).*')
+"""Regexp to detect the automatic worklog in Destination JIRA."""
+
+
+def match_worklog(source_worklogs, worklog):
+    # type: (Dict[int, Worklog], Worklog) -> Optional[Worklog]
+    """
+    Return a matching source worklog for the given destination worklog.
+
+    :param dict source_worklogs: a mapping from source JIRA worklog ID to `Worklog` instance
+    :param Worklog worklog: destination JIRA worklog
+
+    :rtype: Worklog
+    :returns: a worklog from *source_worklogs* that was previously copied into the destination JIRA as *worklog*, or
+        None if *worklog* has no corresponding source worklo
+    """
+    match = AUTO_WORKLOG.match(worklog.description)
+    if not match:
+        return None
+    worklog_id = int(match.groupdict()['id'])
+    try:
+        return source_worklogs[worklog_id]
+    except KeyError:
+        # might be some old worklog
+        return None
+
+
 @click.command()
 @click.option('--config', help="Config path", type=click.File())
 @click.option('--days', help="How many days back to look", default=1)
@@ -265,8 +285,6 @@ def timemachine(config, days):
     config_dict = json.load(config)
     utcnow = arrow.utcnow()
 
-    # Regexp to detect the automatic worklog in Destination JIRA.
-    auto_worklog = re.compile(r'TIMEMACHINE_WID (?P<id>\d+).*')
     # Automatic worklog message.
     worklog_msg = u"TIMEMACHINE_WID {0.id}: {0.author} spent {0.time_spent_seconds}s on {0.issue} at {0.started}"
 
@@ -290,16 +308,10 @@ def timemachine(config, days):
     ):
         if ccworklog.issue not in dest_issues:
             continue
-        match = auto_worklog.match(ccworklog.description)
-        if not match:
+        source_worklog = match_worklog(source_worklogs, ccworklog)
+        if source_worklog is None:
             continue
-        worklog_id = int(match.groupdict()['id'])
-        try:
-            source_worklog = source_worklogs[worklog_id]
-        except KeyError:
-            # might be some old worklog
-            continue
-        del source_worklogs[worklog_id]
+        del source_worklogs[source_worklog.id]
         comment = worklog_msg.format(source_worklog)
         if ccworklog.description == comment:
             click.echo(u"Nothing changed for {0}".format(ccworklog.description))

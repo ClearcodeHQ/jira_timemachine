@@ -14,6 +14,7 @@ FROM app as tests
 # Run tests here.
 RUN pip install .[tests]
 RUN pylint src/jira_timemachine
+RUN pytest
 
 FROM app
 

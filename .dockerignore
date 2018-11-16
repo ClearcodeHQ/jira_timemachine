@@ -1,4 +1,4 @@
-*.pyc
+**/*.pyc
 .dockerignore
 .git
 .github
@@ -7,3 +7,5 @@ Dockerfile
 docs
 example_config
 src/*.egg-info
+htmlcov
+**/__pycache__
