@@ -141,7 +141,7 @@ def timemachine(config, days):
     if utcnow - timedelta(days=days) < TEMPO_EPOCH:
         source_jira = JIRA(
             source_url,
-            basic_auth=(config_dict['source_jira']['login'], config_dict['source_jira']['password'])
+            basic_auth=(config_dict['source_jira']['login'], config_dict['source_jira']['jira_token'])
         )
         source_user = source_jira.user(config_dict['source_jira']['login'])
         for issue in issues(source_jira, issue_jql.format(days, project_key=config_dict['source_jira']['project_key'])):
