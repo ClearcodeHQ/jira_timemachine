@@ -14,5 +14,7 @@
     "jira_token": "",
     "issue": "JIRA-123",
     "tempo_token": ""
+  },
+  "issue_map": {
   }
 }

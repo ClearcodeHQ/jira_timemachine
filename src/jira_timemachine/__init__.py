@@ -274,6 +274,12 @@ def timemachine(config, days):
         worklog.id: worklog
         for worklog in get_worklogs(config_dict['source_jira'], utcnow - timedelta(days=days))}
 
+    # How mapping to multiple destination JIRA works: we have a default issue (config_dict['destination_jira']) and a
+    # mapping from source JIRA issue to a destination JIRA issue (config_dict['issue_map']) overriding it for specific
+    # issues. If a worklog is already copied into any of these issues, it might get updated there. New worklogs are
+    # created as specified in the mapping. No worklogs are moved or deleted.
+    dest_issues = {config_dict['destination_jira']['issue']} | set(config_dict.get('issue_map', {}).itervalues())
+
     # Query all recent user's worklogs and then filter by task. It should be faster than querying by issue and
     # filtering by user if several users sync worklogs to the same issue and the user doesn't have too many worklogs in
     # other issues (e.g. logging time to the destination Jira mostly via the timemachine).
@@ -282,7 +288,7 @@ def timemachine(config, days):
             from_date=(utcnow - timedelta(days=days)).date(),
             username=config_dict['destination_jira']['login'],
     ):
-        if ccworklog.issue != config_dict['destination_jira']['issue']:
+        if ccworklog.issue not in dest_issues:
             continue
         match = auto_worklog.match(ccworklog.description)
         if not match:
@@ -309,8 +315,9 @@ def timemachine(config, days):
     with click.progressbar(source_worklogs.values(), label="Writing worklog") as worklogs:
 
         for source_worklog in worklogs:
-            source_worklog.issue = config_dict['destination_jira']['issue']
             source_worklog.description = worklog_msg.format(source_worklog)
+            source_worklog.issue = config_dict.get('issue_map', {}).get(
+                source_worklog.issue, config_dict['destination_jira']['issue'])
             source_worklog.author = config_dict['destination_jira']['login']
             destination_tempo.post_worklog(source_worklog)
 
