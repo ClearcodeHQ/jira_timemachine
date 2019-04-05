@@ -11,11 +11,13 @@ RUN pip install .
 
 FROM app as tests
 
-# Run tests here.
+# Run linters and tests.
 RUN pip install .[tests]
 RUN pylint src/jira_timemachine
 RUN mypy src/jira_timemachine tests
 RUN pytest
+# List outdated dependencies.
+RUN pip list -o
 
 FROM app
 
