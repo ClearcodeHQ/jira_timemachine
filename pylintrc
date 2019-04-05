@@ -2,4 +2,4 @@
 max-line-length = 120
 
 [MESSAGES CONTROL]
-disable=R0205
+disable=useless-object-inheritance
