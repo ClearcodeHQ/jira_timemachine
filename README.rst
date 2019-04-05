@@ -39,8 +39,8 @@ Build the image::
 
 Run ``timemachine``::
 
-  docker run -v $PWD/example_config:/config timemachine timemachine --config /config/config.json
+  docker run --rm -v $PWD/example_config:/config timemachine timemachine --config /config/config.json
 
 Run ``timecheck``::
 
-  docker run -v $PWD/example_config:/config timemachine timecheck --config /config/config.json
+  docker run --rm -v $PWD/example_config:/config timemachine timecheck --config /config/config.json
