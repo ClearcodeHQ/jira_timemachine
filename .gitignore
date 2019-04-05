@@ -1,4 +1,4 @@
-/example_config/config.json
+/example_config/*.json
 *.py[cod]
 
 # C extensions
@@ -38,3 +38,4 @@ nosetests.xml
 
 .mypy_cache
 *~
+htmlcov

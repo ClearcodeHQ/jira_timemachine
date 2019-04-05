@@ -17,19 +17,11 @@ def read(fname):
     :returns: file contents
     :rtype: str
     """
-    return open(os.path.join(here, fname)).read()
+    with open(os.path.join(here, fname)) as f:
+        return f.read()
 
-requirements = [
-    'Click',
-    'jira',
-    'arrow',
-    'typing',
-]
-
-test_requires = [
-    'pytest',
-    'pytest-cov'
-]
+requirements = read('requirements.txt')
+test_requires = read('requirements-tests.txt')
 
 extras_require = {
     'docs': ['sphinx'],
@@ -58,6 +50,7 @@ setup(
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.7',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
     package_dir = {'': 'src'},
@@ -71,6 +64,7 @@ setup(
     entry_points={
         'console_scripts': [
             'timemachine = jira_timemachine:timemachine',
+            'timecheck = jira_timemachine:timecheck',
         ],
 
     },

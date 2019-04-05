@@ -3,7 +3,7 @@
     "url": "https://source.atlassian.net",
     "login": "login",
     "email": "login@login.com",
-    "password": "pass",
+    "jira_token": "",
     "project_key": "JIRA",
     "tempo_token": ""
   },
@@ -11,8 +11,10 @@
     "url": "https://destination.atlassian.net",
     "login": "login",
     "email": "login@login.com",
-    "password": "pass",
+    "jira_token": "",
     "issue": "JIRA-123",
     "tempo_token": ""
+  },
+  "issue_map": {
   }
 }
