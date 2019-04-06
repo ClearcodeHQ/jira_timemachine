@@ -50,7 +50,7 @@ class Worklog(object):
         """Return self as dict for use in Tempo API."""
         return {
             'attributes': [],
-            'authorUsername': self.author,
+            'authorAccountId': self.author,
             'description': self.description,
             'issueKey': self.issue,
             'startDate': self.started.format('YYYY-MM-DD'),
@@ -66,26 +66,28 @@ class TempoClient(object):
     See <https://tempo-io.github.io/tempo-api-docs/> for the API documentation.
     """
 
-    def __init__(self, tempo_token):
-        # type: (str) -> None
+    def __init__(self, tempo_token, account_id):
+        # type: (str, str) -> None
         """Prepare session for Tempo API requests."""
+        self.account_id = account_id
         self.session = requests.Session()
         self.session.headers.update({
             'Authorization': 'Bearer %s' % tempo_token
         })
 
-    def get_worklogs(self, from_date, username):
-        # type: (date, Optional[str]) -> Iterator[Worklog]
+    def get_worklogs(self, from_date, single_user=True):
+        # type: (date, bool) -> Iterator[Worklog]
         """
         Return all recent worklogs for the specified user.
 
         :rtype: iterator
         :returns: yields Worklog instances
         """
-        if username:
-            url = 'https://api.tempo.io/2/worklogs/user/%s?from=%s&to=%s' % (username, from_date, date.today())
+        if single_user:
+            url = 'https://api.tempo.io/core/3/worklogs/user/%s?from=%s&to=%s' % (
+                self.account_id, from_date, date.today())
         else:
-            url = 'https://api.tempo.io/2/worklogs?from=%s&to=%s' % (from_date, date.today())
+            url = 'https://api.tempo.io/core/3/worklogs?from=%s&to=%s' % (from_date, date.today())
         while url:
             res = self.session.get(
                 url,
@@ -98,12 +100,12 @@ class TempoClient(object):
                 raise
             response_data = res.json()
             for row in response_data['results']:
-                if username and row['author']['username'] != username:
+                if single_user and row['author']['accountId'] != self.account_id:
                     continue
                 yield Worklog(
                     id=int(row['jiraWorklogId']),
                     tempo_id=int(row['tempoWorklogId']),
-                    author=row['author']['username'],
+                    author=row['author']['accountId'],
                     started=arrow.get('{startDate} {startTime}'.format(**row)),
                     time_spent_seconds=int(row['timeSpentSeconds']),
                     issue=row['issue']['key'],
@@ -121,7 +123,7 @@ class TempoClient(object):
         if worklog.tempo_id is None:
             raise ValueError('The worklog to update must have a Tempo ID')
         res = self.session.put(
-            b'https://api.tempo.io/2/worklogs/%d' % worklog.tempo_id,
+            b'https://api.tempo.io/core/3/worklogs/%d' % worklog.tempo_id,
             data=json.dumps(worklog.to_tempo()).encode('utf-8')
         )
         try:
@@ -138,7 +140,7 @@ class TempoClient(object):
         :param dict worklog: new worklog data
         """
         res = self.session.post(
-            b'https://api.tempo.io/2/worklogs',
+            b'https://api.tempo.io/core/3/worklogs',
             data=json.dumps(worklog.to_tempo()).encode('utf-8')
         )
         try:
@@ -157,16 +159,12 @@ class JIRAClient(object):  # pylint:disable=too-few-public-methods
     def __init__(self, config):
         # type: (dict) -> None
         """Initialize with credentials from the *config* dict."""
-        self._login = config['login']
         self._jira = JIRA(
             config['url'],
             basic_auth=(config['email'], config['jira_token'])
         )
-        user = self._jira.current_user()
-        if self._login != user:
-            raise click.ClickException('Logged in as {} but {} specified in config'.format(user, self._login))
-        self._project_key = config['project_key']
-
+        self._project_key = config.get('project_key')
+        self.account_id = self._jira.myself()['accountId']  # type: str
 
     def _issues(self, query):
         # type: (str) -> Iterator[jira.Issue]
@@ -180,8 +178,8 @@ class JIRAClient(object):  # pylint:disable=too-few-public-methods
             if len(search_results) < 50:
                 return
 
-    def get_worklogs(self, from_date, username):
-        # type: (date, Optional[str]) -> Iterator[Worklog]
+    def get_worklogs(self, from_date, single_user=True):
+        # type: (date, bool) -> Iterator[Worklog]
         """
         Return all recent worklogs for the specified user.
 
@@ -193,22 +191,29 @@ class JIRAClient(object):  # pylint:disable=too-few-public-methods
                 worklog = Worklog(
                     id=int(jira_worklog.id),
                     tempo_id=None,
-                    author=jira_worklog.author.name,
+                    author=jira_worklog.author.accountId,
                     time_spent_seconds=int(jira_worklog.timeSpentSeconds),
                     issue=issue.key,
                     started=arrow.get(jira_worklog.started),
                     description=getattr(jira_worklog, 'comment', u''),
                 )
-                if username and worklog.author != username:
+                if single_user and worklog.author != self.account_id:
                     continue
                 yield worklog
+
+
+def get_tempo_client(config):
+    # type: (dict) -> TempoClient
+    """Return a Tempo client for the source of worklogs specified in *config*."""
+    jira_client = JIRAClient(config)
+    return TempoClient(config['tempo_token'], jira_client.account_id)
 
 
 def get_client(config):
     # type: (dict) -> Union[TempoClient, JIRAClient]
     """Return a client for the source of worklogs specified in *config*."""
     if 'tempo_token' in config:
-        return TempoClient(config['tempo_token'])
+        return get_tempo_client(config)
     return JIRAClient(config)
 
 
@@ -223,7 +228,7 @@ def get_worklogs(config, since, all_users=False):
     """
     for worklog in get_client(config).get_worklogs(
             from_date=since.date(),
-            username=config['login'] if not all_users else None,
+            single_user=not all_users,
     ):
         if worklog.started < since:
             click.echo('Skip, update too long ago {0}'.format(worklog.started))
@@ -302,10 +307,9 @@ def timemachine(config, days):
     # Query all recent user's worklogs and then filter by task. It should be faster than querying by issue and
     # filtering by user if several users sync worklogs to the same issue and the user doesn't have too many worklogs in
     # other issues (e.g. logging time to the destination Jira mostly via the timemachine).
-    destination_tempo = TempoClient(config_dict['destination_jira']['tempo_token'])
+    destination_tempo = get_tempo_client(config_dict['destination_jira'])
     for ccworklog in destination_tempo.get_worklogs(
             from_date=(utcnow - timedelta(days=days)).date(),
-            username=config_dict['destination_jira']['login'],
     ):
         if ccworklog.issue not in dest_issues:
             continue
@@ -331,7 +335,7 @@ def timemachine(config, days):
             source_worklog.description = worklog_msg.format(source_worklog)
             source_worklog.issue = config_dict.get('issue_map', {}).get(
                 source_worklog.issue, config_dict['destination_jira']['issue'])
-            source_worklog.author = config_dict['destination_jira']['login']
+            source_worklog.author = destination_tempo.account_id
             destination_tempo.post_worklog(source_worklog)
 
 

@@ -21,7 +21,7 @@ def test_worklog_to_tempo():
         issue=u'X-11',
         ).to_tempo() == {
             'attributes': [],
-            'authorUsername': u'q.atester',
+            'authorAccountId': u'q.atester',
             'description': u'Invent test data',
             'issueKey': u'X-11',
             'startDate': u'2018-11-16',
@@ -30,11 +30,11 @@ def test_worklog_to_tempo():
         }
 
 
-@pytest.mark.parametrize('all_users, user_name', (
-    (False, 'the.user'),
-    (True, None),
+@pytest.mark.parametrize('all_users, single_user', (
+    (False, True),
+    (True, False),
 ))
-def test_get_worklogs(all_users, user_name):
+def test_get_worklogs(all_users, single_user):
     """Test that get_worklogs performs proper calls and filters worklogs by date."""
     old_sample_worklogs = [
         Worklog(id=1, tempo_id=2, started=arrow.get('2018-11-10'), time_spent_seconds=1, description=u'', author=u'', issue=u''),
@@ -51,7 +51,7 @@ def test_get_worklogs(all_users, user_name):
 
     assert mock_get_client.mock_calls == [
         call(config),
-        call().get_worklogs(from_date=date(2018, 11, 16), username=user_name),
+        call().get_worklogs(from_date=date(2018, 11, 16), single_user=single_user),
     ]
 
 
