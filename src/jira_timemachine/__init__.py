@@ -212,7 +212,7 @@ def get_tempo_client(config):
 def get_client(config):
     # type: (dict) -> Union[TempoClient, JIRAClient]
     """Return a client for the source of worklogs specified in *config*."""
-    if 'tempo_token' in config:
+    if 'tempo_token' in config and config['tempo_token']:
         return get_tempo_client(config)
     return JIRAClient(config)
 
