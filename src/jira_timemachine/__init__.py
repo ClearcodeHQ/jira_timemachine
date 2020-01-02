@@ -30,7 +30,7 @@ __version__ = '0.0.0'
 class Worklog(object):
     """JIRA or Tempo worklog."""
 
-    id = attr.ib(type=int)
+    id = attr.ib(type=int)  #pylint:disable=invalid-name
     """
     JIRA worklog ID.
 
