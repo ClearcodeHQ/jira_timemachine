@@ -14,6 +14,11 @@ Check the example config for the needed fields; both JIRA and Tempo require pers
 <https://confluence.atlassian.com/cloud/api-tokens-938839638.html> and
 <https://tempo-io.atlassian.net/wiki/spaces/TEMPO/pages/199065601/How+to+use+Tempo+Cloud+REST+APIs#HowtouseTempoCloudRESTAPIs-Createapersonalauthorizationtoken>.
 
+.. note::
+
+    Timemachine will use regular JIRA's worklogs to read worklogs from if you
+    won't have *tempo_token* configuration key, or have it empty.
+
 Issue mapping
 -------------
 
