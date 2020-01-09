@@ -170,12 +170,13 @@ class JIRAClient(object):  # pylint:disable=too-few-public-methods
         # type: (str) -> Iterator[jira.Issue]
         """Issues iterator."""
         issue_index = 1
+        max_results = 50
         while True:
-            search_results = self._jira.search_issues(jql_str=query, startAt=issue_index, maxResults=50)
+            search_results = self._jira.search_issues(jql_str=query, startAt=issue_index, maxResults=max_results)
             for issue in search_results:
                 yield issue
-            issue_index += 51
-            if len(search_results) < 50:
+            issue_index += max_results
+            if len(search_results) < max_results:
                 return
 
     def get_worklogs(self, from_date, single_user=True):
