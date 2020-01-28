@@ -124,7 +124,7 @@ class TempoClient(object):
             raise ValueError('The worklog to update must have a Tempo ID')
         res = self.session.put(
             b'https://api.tempo.io/core/3/worklogs/%d' % worklog.tempo_id,
-            data=json.dumps(worklog.to_tempo()).encode('utf-8')
+            json=worklog.to_tempo()
         )
         try:
             res.raise_for_status()
@@ -141,7 +141,7 @@ class TempoClient(object):
         """
         res = self.session.post(
             b'https://api.tempo.io/core/3/worklogs',
-            data=json.dumps(worklog.to_tempo()).encode('utf-8')
+            json=worklog.to_tempo()
         )
         try:
             res.raise_for_status()
