@@ -141,7 +141,8 @@ class TempoClient(object):
         """
         res = self.session.post(
             b'https://api.tempo.io/core/3/worklogs',
-            data=json.dumps(worklog.to_tempo()).encode('utf-8')
+            data=json.dumps(worklog.to_tempo()).encode('utf-8'),
+            headers={'Content-Type': 'application/json'}
         )
         try:
             res.raise_for_status()
