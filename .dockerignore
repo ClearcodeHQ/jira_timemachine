@@ -9,3 +9,4 @@ example_config
 src/*.egg-info
 htmlcov
 **/__pycache__
+venv

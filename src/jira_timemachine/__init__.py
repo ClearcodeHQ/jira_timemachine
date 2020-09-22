@@ -17,11 +17,13 @@ from typing import Iterator, Dict, List, IO, TypeVar, Callable, Optional, Tuple,
 
 import attr
 import click
+from click import ClickException
 import arrow
 import six
 from jira import JIRA
 import jira
 import requests
+from requests import HTTPError
 
 __version__ = '0.0.0'
 
@@ -102,15 +104,21 @@ class TempoClient(object):
             for row in response_data['results']:
                 if single_user and row['author']['accountId'] != self.account_id:
                     continue
-                yield Worklog(
-                    id=int(row['jiraWorklogId']),
-                    tempo_id=int(row['tempoWorklogId']),
-                    author=row['author']['accountId'],
-                    started=arrow.get('{startDate} {startTime}'.format(**row)),
-                    time_spent_seconds=int(row['timeSpentSeconds']),
-                    issue=row['issue']['key'],
-                    description=row['description'],
-                )
+                try:
+                    yield Worklog(
+                        id=int(row['jiraWorklogId']),
+                        tempo_id=int(row['tempoWorklogId']),
+                        author=row['author']['accountId'],
+                        started=arrow.get('{startDate} {startTime}'.format(**row)),
+                        time_spent_seconds=int(row['timeSpentSeconds']),
+                        issue=row['issue']['key'],
+                        description=row['description'],
+                    )
+                except TypeError as exc:
+                    msg = f'Encountered an error {exc} while processing a worklog entry {row}'
+                    click.echo(msg, err=True)
+                    continue
+
             url = response_data['metadata'].get('next')
 
     def update_worklog(self, worklog):
@@ -145,9 +153,8 @@ class TempoClient(object):
         )
         try:
             res.raise_for_status()
-        except:
+        except HTTPError:
             click.echo(res.content)
-            raise
 
 
 class JIRAClient(object):  # pylint:disable=too-few-public-methods
