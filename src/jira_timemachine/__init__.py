@@ -32,7 +32,7 @@ __version__ = '0.0.0'
 class Worklog(object):
     """JIRA or Tempo worklog."""
 
-    id = attr.ib(type=int)  #pylint:disable=invalid-name
+    id = attr.ib(type=int)  # pylint:disable=invalid-name
     """
     JIRA worklog ID.
 
@@ -97,7 +97,7 @@ class TempoClient(object):
             )
             try:
                 res.raise_for_status()
-            except:
+            except Exception:
                 click.echo(res.content)
                 raise
             response_data = res.json()
@@ -136,7 +136,7 @@ class TempoClient(object):
         )
         try:
             res.raise_for_status()
-        except:
+        except Exception:
             click.echo(res.content)
             raise
 
