@@ -21,7 +21,7 @@ def read(fname):
         return f.read()
 
 
-requirements = ["arrow>=0.13.1", "attrs>=19.1.0", "Click>=7.0", "jira>=2.0.0", "six>=1.12.0", "typing>=3.6.6"]
+requirements = ["arrow>=0.13.1", "attrs>=19.1.0", "Click>=7.0", "jira>=2.0.0", "typing>=3.6.6"]
 test_requires = ["pytest>=4.4.0", "pytest-cov>=2.6.1", "mock>=2.0.0"]
 
 extras_require = {"docs": ["sphinx"], "tests": test_requires}

@@ -19,7 +19,6 @@ import attr
 import click
 from click import ClickException
 import arrow
-import six
 from jira import JIRA
 import jira
 import requests
@@ -310,7 +309,7 @@ def timemachine(config, days):
     # mapping from source JIRA issue to a destination JIRA issue (config_dict['issue_map']) overriding it for specific
     # issues. If a worklog is already copied into any of these issues, it might get updated there. New worklogs are
     # created as specified in the mapping. No worklogs are moved or deleted.
-    dest_issues = {config_dict['destination_jira']['issue']} | set(six.itervalues(config_dict.get('issue_map', {})))
+    dest_issues = {config_dict['destination_jira']['issue']} | set(config_dict.get('issue_map', {}).values())
 
     # Query all recent user's worklogs and then filter by task. It should be faster than querying by issue and
     # filtering by user if several users sync worklogs to the same issue and the user doesn't have too many worklogs in
