@@ -1,6 +1,6 @@
 arrow==0.13.1
 attrs==19.1.0
-Click==7.0
+Click==8.0.1
 jira==2.0.0
 six==1.16.0
 typing==3.6.6
