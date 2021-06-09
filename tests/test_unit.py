@@ -37,12 +37,44 @@ def test_worklog_to_tempo():
 def test_get_worklogs(all_users, single_user):
     """Test that get_worklogs performs proper calls and filters worklogs by date."""
     old_sample_worklogs = [
-        Worklog(id=1, tempo_id=2, started=arrow.get('2018-11-10'), time_spent_seconds=1, description=u'', author=u'', issue=u''),
-        Worklog(id=1, tempo_id=2, started=arrow.get('2018-11-11'), time_spent_seconds=1, description=u'', author=u'', issue=u''),
+        Worklog(
+            id=1,
+            tempo_id=2,
+            started=arrow.get('2018-11-10'),
+            time_spent_seconds=1,
+            description=u'',
+            author=u'',
+            issue=u''
+        ),
+        Worklog(
+            id=1,
+            tempo_id=2,
+            started=arrow.get('2018-11-11'),
+            time_spent_seconds=1,
+            description=u'',
+            author=u'',
+            issue=u'',
+        ),
     ]
     recent_sample_worklogs = [
-        Worklog(id=1, tempo_id=2, started=arrow.get('2018-11-16'), time_spent_seconds=1, description=u'', author=u'', issue=u''),
-        Worklog(id=1, tempo_id=2, started=arrow.get('2018-11-17'), time_spent_seconds=1, description=u'', author=u'', issue=u''),
+        Worklog(
+            id=1,
+            tempo_id=2,
+            started=arrow.get('2018-11-16'),
+            time_spent_seconds=1,
+            description=u'',
+            author=u'',
+            issue=u'',
+        ),
+        Worklog(
+            id=1,
+            tempo_id=2,
+            started=arrow.get('2018-11-17'),
+            time_spent_seconds=1,
+            description=u'',
+            author=u'',
+            issue=u'',
+        ),
     ]
     config = {'magic': True, 'login': 'the.user'}
     with patch('jira_timemachine.get_client') as mock_get_client:
