@@ -7,20 +7,3 @@ COPY requirements.txt ./
 RUN pip install -r requirements.txt
 COPY . .
 RUN pip install .
-
-FROM app as tests
-
-# Run linters and tests.
-RUN pip install -r requirements-lint.txt
-#RUN pip install .[tests]
-RUN pydocstyle src/ tests/
-RUN pycodestyle src/ tests/
-RUN mypy src tests
-RUN pytest
-# List outdated dependencies.
-RUN pip list -o
-
-FROM app
-
-# Have the application without test dependencies, so the image is smaller and we can check that test dependencies are
-# needed only for tests.
