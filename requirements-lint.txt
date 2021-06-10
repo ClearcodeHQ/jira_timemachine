@@ -1,7 +1,7 @@
 # linters
 pydocstyle==6.1.1
 pycodestyle==2.7.0
-mypy==0.700
+mypy==0.901
 types-requests==0.1.9
 types-mock==0.1.1
 # black==19.3b0
