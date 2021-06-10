@@ -24,7 +24,7 @@ import jira
 import requests
 from requests import HTTPError
 
-__version__ = '0.0.0'
+__version__ = "0.0.0"
 
 
 @attr.s  # pylint:disable=too-few-public-methods
@@ -50,13 +50,13 @@ class Worklog(object):
         # type: () -> dict
         """Return self as dict for use in Tempo API."""
         return {
-            'attributes': [],
-            'authorAccountId': self.author,
-            'description': self.description,
-            'issueKey': self.issue,
-            'startDate': self.started.format('YYYY-MM-DD'),
-            'startTime': self.started.format('HH:mm:ss'),
-            'timeSpentSeconds': self.time_spent_seconds,
+            "attributes": [],
+            "authorAccountId": self.author,
+            "description": self.description,
+            "issueKey": self.issue,
+            "startDate": self.started.format("YYYY-MM-DD"),
+            "startTime": self.started.format("HH:mm:ss"),
+            "timeSpentSeconds": self.time_spent_seconds,
         }
 
 
@@ -72,9 +72,7 @@ class TempoClient(object):
         """Prepare session for Tempo API requests."""
         self.account_id = account_id
         self.session = requests.Session()
-        self.session.headers.update({
-            'Authorization': 'Bearer %s' % tempo_token
-        })
+        self.session.headers.update({"Authorization": "Bearer %s" % tempo_token})
 
     def get_worklogs(self, from_date, single_user=True):
         # type: (date, bool) -> Iterator[Worklog]
@@ -85,10 +83,13 @@ class TempoClient(object):
         :returns: yields Worklog instances
         """
         if single_user:
-            url = 'https://api.tempo.io/core/3/worklogs/user/%s?from=%s&to=%s' % (
-                self.account_id, from_date, date.today())
+            url = "https://api.tempo.io/core/3/worklogs/user/%s?from=%s&to=%s" % (
+                self.account_id,
+                from_date,
+                date.today(),
+            )
         else:
-            url = 'https://api.tempo.io/core/3/worklogs?from=%s&to=%s' % (from_date, date.today())
+            url = "https://api.tempo.io/core/3/worklogs?from=%s&to=%s" % (from_date, date.today())
         while url:
             res = self.session.get(
                 url,
@@ -100,25 +101,25 @@ class TempoClient(object):
                 click.echo(res.content)
                 raise
             response_data = res.json()
-            for row in response_data['results']:
-                if single_user and row['author']['accountId'] != self.account_id:
+            for row in response_data["results"]:
+                if single_user and row["author"]["accountId"] != self.account_id:
                     continue
                 try:
                     yield Worklog(
-                        id=int(row['jiraWorklogId']),
-                        tempo_id=int(row['tempoWorklogId']),
-                        author=row['author']['accountId'],
-                        started=arrow.get('{startDate} {startTime}'.format(**row)),
-                        time_spent_seconds=int(row['timeSpentSeconds']),
-                        issue=row['issue']['key'],
-                        description=row['description'],
+                        id=int(row["jiraWorklogId"]),
+                        tempo_id=int(row["tempoWorklogId"]),
+                        author=row["author"]["accountId"],
+                        started=arrow.get("{startDate} {startTime}".format(**row)),
+                        time_spent_seconds=int(row["timeSpentSeconds"]),
+                        issue=row["issue"]["key"],
+                        description=row["description"],
                     )
                 except TypeError as exc:
-                    msg = f'Encountered an error {exc} while processing a worklog entry {row}'
+                    msg = f"Encountered an error {exc} while processing a worklog entry {row}"
                     click.echo(msg, err=True)
                     continue
 
-            url = response_data['metadata'].get('next')
+            url = response_data["metadata"].get("next")
 
     def update_worklog(self, worklog):
         # type: (Worklog) -> None
@@ -128,11 +129,8 @@ class TempoClient(object):
         :param Worklog worklog: updated worklog data
         """
         if worklog.tempo_id is None:
-            raise ValueError('The worklog to update must have a Tempo ID')
-        res = self.session.put(
-            b'https://api.tempo.io/core/3/worklogs/%d' % worklog.tempo_id,
-            json=worklog.to_tempo()
-        )
+            raise ValueError("The worklog to update must have a Tempo ID")
+        res = self.session.put(b"https://api.tempo.io/core/3/worklogs/%d" % worklog.tempo_id, json=worklog.to_tempo())
         try:
             res.raise_for_status()
         except Exception:
@@ -146,10 +144,7 @@ class TempoClient(object):
 
         :param dict worklog: new worklog data
         """
-        res = self.session.post(
-            b'https://api.tempo.io/core/3/worklogs',
-            json=worklog.to_tempo()
-        )
+        res = self.session.post(b"https://api.tempo.io/core/3/worklogs", json=worklog.to_tempo())
         try:
             res.raise_for_status()
         except HTTPError:
@@ -165,12 +160,9 @@ class JIRAClient(object):  # pylint:disable=too-few-public-methods
     def __init__(self, config):
         # type: (dict) -> None
         """Initialize with credentials from the *config* dict."""
-        self._jira = JIRA(
-            config['url'],
-            basic_auth=(config['email'], config['jira_token'])
-        )
-        self._project_key = config.get('project_key')
-        self.account_id = self._jira.myself()['accountId']  # type: str
+        self._jira = JIRA(config["url"], basic_auth=(config["email"], config["jira_token"]))
+        self._project_key = config.get("project_key")
+        self.account_id = self._jira.myself()["accountId"]  # type: str
 
     def _issues(self, query):
         # type: (str) -> Iterator[jira.Issue]
@@ -202,7 +194,7 @@ class JIRAClient(object):  # pylint:disable=too-few-public-methods
                     time_spent_seconds=int(jira_worklog.timeSpentSeconds),
                     issue=issue.key,
                     started=arrow.get(jira_worklog.started),
-                    description=getattr(jira_worklog, 'comment', u''),
+                    description=getattr(jira_worklog, "comment", ""),
                 )
                 if single_user and worklog.author != self.account_id:
                     continue
@@ -213,13 +205,13 @@ def get_tempo_client(config):
     # type: (dict) -> TempoClient
     """Return a Tempo client for the source of worklogs specified in *config*."""
     jira_client = JIRAClient(config)
-    return TempoClient(config['tempo_token'], jira_client.account_id)
+    return TempoClient(config["tempo_token"], jira_client.account_id)
 
 
 def get_client(config):
     # type: (dict) -> Union[TempoClient, JIRAClient]
     """Return a client for the source of worklogs specified in *config*."""
-    if 'tempo_token' in config and config['tempo_token']:
+    if "tempo_token" in config and config["tempo_token"]:
         return get_tempo_client(config)
     return JIRAClient(config)
 
@@ -234,11 +226,11 @@ def get_worklogs(config, since, all_users=False):
     :param bool all_users: if True, yield also worklogs from other users if available
     """
     for worklog in get_client(config).get_worklogs(
-            from_date=since.date(),
-            single_user=not all_users,
+        from_date=since.date(),
+        single_user=not all_users,
     ):
         if worklog.started < since:
-            click.echo('Skip, update too long ago {0}'.format(worklog.started))
+            click.echo("Skip, update too long ago {0}".format(worklog.started))
             continue
         yield worklog
 
@@ -252,17 +244,17 @@ def format_time(seconds):
     """
     out = []
     if seconds > 3599:
-        out.append('%sh' % (seconds // 3600))
+        out.append("%sh" % (seconds // 3600))
         seconds = seconds % 3600
     if seconds > 59:
-        out.append('%sm' % (seconds // 60))
+        out.append("%sm" % (seconds // 60))
         seconds = seconds % 60
     if seconds > 0:
-        out.append('%ss' % seconds)
-    return ' '.join(out)
+        out.append("%ss" % seconds)
+    return " ".join(out)
 
 
-AUTO_WORKLOG = re.compile(r'TIMEMACHINE_WID (?P<id>\d+).*')
+AUTO_WORKLOG = re.compile(r"TIMEMACHINE_WID (?P<id>\d+).*")
 """Regexp to detect the automatic worklog in Destination JIRA."""
 
 
@@ -281,7 +273,7 @@ def match_worklog(source_worklogs, worklog):
     match = AUTO_WORKLOG.match(worklog.description)
     if not match:
         return None
-    worklog_id = int(match.groupdict()['id'])
+    worklog_id = int(match.groupdict()["id"])
     try:
         return source_worklogs[worklog_id]
     except KeyError:
@@ -290,8 +282,8 @@ def match_worklog(source_worklogs, worklog):
 
 
 @click.command()
-@click.option('--config', help="Config path", type=click.File())
-@click.option('--days', help="How many days back to look", default=1)
+@click.option("--config", help="Config path", type=click.File())
+@click.option("--days", help="How many days back to look", default=1)
 def timemachine(config, days):
     # type: (IO[str], int) -> None
     """Copy worklogs from source Jira issues to the destination Jira issue."""
@@ -299,24 +291,24 @@ def timemachine(config, days):
     utcnow = arrow.utcnow()
 
     # Automatic worklog message.
-    worklog_msg = u"TIMEMACHINE_WID {0.id}: {0.author} spent {0.time_spent_seconds}s on {0.issue} at {0.started}"
+    worklog_msg = "TIMEMACHINE_WID {0.id}: {0.author} spent {0.time_spent_seconds}s on {0.issue} at {0.started}"
 
     source_worklogs = {
-        worklog.id: worklog
-        for worklog in get_worklogs(config_dict['source_jira'], utcnow - timedelta(days=days))}
+        worklog.id: worklog for worklog in get_worklogs(config_dict["source_jira"], utcnow - timedelta(days=days))
+    }
 
     # How mapping to multiple destination JIRA works: we have a default issue (config_dict['destination_jira']) and a
     # mapping from source JIRA issue to a destination JIRA issue (config_dict['issue_map']) overriding it for specific
     # issues. If a worklog is already copied into any of these issues, it might get updated there. New worklogs are
     # created as specified in the mapping. No worklogs are moved or deleted.
-    dest_issues = {config_dict['destination_jira']['issue']} | set(config_dict.get('issue_map', {}).values())
+    dest_issues = {config_dict["destination_jira"]["issue"]} | set(config_dict.get("issue_map", {}).values())
 
     # Query all recent user's worklogs and then filter by task. It should be faster than querying by issue and
     # filtering by user if several users sync worklogs to the same issue and the user doesn't have too many worklogs in
     # other issues (e.g. logging time to the destination Jira mostly via the timemachine).
-    destination_tempo = get_tempo_client(config_dict['destination_jira'])
+    destination_tempo = get_tempo_client(config_dict["destination_jira"])
     for ccworklog in destination_tempo.get_worklogs(
-            from_date=(utcnow - timedelta(days=days)).date(),
+        from_date=(utcnow - timedelta(days=days)).date(),
     ):
         if ccworklog.issue not in dest_issues:
             continue
@@ -326,9 +318,9 @@ def timemachine(config, days):
         del source_worklogs[source_worklog.id]
         comment = worklog_msg.format(source_worklog)
         if ccworklog.description == comment:
-            click.echo(u"Nothing changed for {0}".format(ccworklog.description))
+            click.echo("Nothing changed for {0}".format(ccworklog.description))
             continue
-        click.echo(u"Updating worklog {0} to {1}".format(ccworklog.description, comment))
+        click.echo("Updating worklog {0} to {1}".format(ccworklog.description, comment))
         ccworklog.description = worklog_msg.format(source_worklog)
         ccworklog.started = source_worklog.started
         ccworklog.time_spent_seconds = source_worklog.time_spent_seconds
@@ -340,22 +332,24 @@ def timemachine(config, days):
 
         for source_worklog in worklogs:
             source_worklog.description = worklog_msg.format(source_worklog)
-            source_worklog.issue = config_dict.get('issue_map', {}).get(
-                source_worklog.issue, config_dict['destination_jira']['issue'])
+            source_worklog.issue = config_dict.get("issue_map", {}).get(
+                source_worklog.issue, config_dict["destination_jira"]["issue"]
+            )
             source_worklog.author = destination_tempo.account_id
             destination_tempo.post_worklog(source_worklog)
 
 
 @click.command()
-@click.option('--config', help='Config path', type=click.File())
+@click.option("--config", help="Config path", type=click.File())
 @click.option(
-    '--since', help='Date from which to start listing (defaults to the start of the current month)', default='')
-@click.option('--pm', 'is_pm', help='Show time spent by all users', type=bool, default=False, is_flag=True)
+    "--since", help="Date from which to start listing (defaults to the start of the current month)", default=""
+)
+@click.option("--pm", "is_pm", help="Show time spent by all users", type=bool, default=False, is_flag=True)
 def timecheck(config, since, is_pm):
     # type: (IO[str], str, bool) -> None
     """List time spent per day and overall on the source JIRA."""
     config_dict = json.load(config)
-    start = arrow.get(since) if since else arrow.utcnow().floor('month')
+    start = arrow.get(since) if since else arrow.utcnow().floor("month")
     total = 0
 
     def worklog_key(worklog):
@@ -364,11 +358,11 @@ def timecheck(config, since, is_pm):
         return (worklog.started.date(), worklog.author)
 
     for (day, author), worklogs in itertools.groupby(
-            sorted(get_worklogs(config_dict['source_jira'], start, all_users=is_pm), key=worklog_key),
-            worklog_key,
+        sorted(get_worklogs(config_dict["source_jira"], start, all_users=is_pm), key=worklog_key),
+        worklog_key,
     ):
         day_sum = sum(worklog.time_spent_seconds for worklog in worklogs)
         total += day_sum
-        click.echo('{} {} spent {}'.format(day, author, format_time(day_sum)))
+        click.echo("{} {} spent {}".format(day, author, format_time(day_sum)))
 
-    click.echo('Total {}'.format(format_time(total)))
+    click.echo("Total {}".format(format_time(total)))

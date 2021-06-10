@@ -4,5 +4,5 @@ pycodestyle==2.7.0
 mypy==0.901
 types-requests==0.1.9
 types-mock==0.1.1
-# black==19.3b0
+black==21.5b2
 -r requirements-test.txt

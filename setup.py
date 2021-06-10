@@ -6,7 +6,7 @@ from setuptools import setup, find_packages
 
 here = os.path.dirname(__file__)
 with open(os.path.join(here, "src", "jira_timemachine", "__init__.py")) as v_file:
-    package_version = re.compile(r".*__version__ = '(.*?)'", re.S).match(v_file.read()).group(1)
+    package_version = re.compile(r".*__version__ = \"(.*?)\"", re.S).match(v_file.read()).group(1)
 
 
 def read(fname):
