@@ -1,3 +1,4 @@
+
 jira_timemachine
 ================
 
@@ -36,16 +37,10 @@ elsewhere will be duplicated.
 Use via Docker
 --------------
 
-Build the image::
-
-  docker build -t timemachine .
-
-(This installs packages and runs linters.)
-
 Run ``timemachine``::
 
-  docker run --rm -v $PWD/example_config:/config timemachine timemachine --config /config/config.json
+  docker run --rm -v $PWD/example_config:/config clearcode/jira_timemachine timemachine --config /config/config.json
 
 Run ``timecheck``::
 
-  docker run --rm -v $PWD/example_config:/config timemachine timecheck --config /config/config.json
+  docker run --rm -v $PWD/example_config:/config clearcode/jira_timemachine timecheck --config /config/config.json
