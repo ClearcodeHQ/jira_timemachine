@@ -46,8 +46,7 @@ class Worklog(object):
     author: str
     issue: str
 
-    def to_tempo(self):
-        # type: () -> dict
+    def to_tempo(self) -> dict:
         """Return self as dict for use in Tempo API."""
         return {
             "attributes": [],
@@ -67,19 +66,16 @@ class TempoClient(object):
     See <https://tempo-io.github.io/tempo-api-docs/> for the API documentation.
     """
 
-    def __init__(self, tempo_token, account_id):
-        # type: (str, str) -> None
+    def __init__(self, tempo_token: str, account_id: str) -> None:
         """Prepare session for Tempo API requests."""
         self.account_id = account_id
         self.session = requests.Session()
         self.session.headers.update({"Authorization": "Bearer %s" % tempo_token})
 
-    def get_worklogs(self, from_date, single_user=True):
-        # type: (date, bool) -> Iterator[Worklog]
+    def get_worklogs(self, from_date: date, single_user: bool = True) -> Iterator[Worklog]:
         """
         Return all recent worklogs for the specified user.
 
-        :rtype: iterator
         :returns: yields Worklog instances
         """
         if single_user:
@@ -121,12 +117,11 @@ class TempoClient(object):
 
             url = response_data["metadata"].get("next")
 
-    def update_worklog(self, worklog):
-        # type: (Worklog) -> None
+    def update_worklog(self, worklog: Worklog) -> None:
         """
         Update the specified worklog.
 
-        :param Worklog worklog: updated worklog data
+        :param worklog: updated worklog data
         """
         if worklog.tempo_id is None:
             raise ValueError("The worklog to update must have a Tempo ID")
@@ -137,12 +132,11 @@ class TempoClient(object):
             click.echo(res.content)
             raise
 
-    def post_worklog(self, worklog):
-        # type: (Worklog) -> None
+    def post_worklog(self, worklog: Worklog) -> None:
         """
         Upload a new worklog.
 
-        :param dict worklog: new worklog data
+        :param worklog: new worklog data
         """
         res = self.session.post(b"https://api.tempo.io/core/3/worklogs", json=worklog.to_tempo())
         try:
@@ -157,15 +151,13 @@ class JIRAClient(object):  # pylint:disable=too-few-public-methods
     _ISSUE_JQL = 'project = {project_key} AND updated >= "{0}" ORDER BY key ASC'
     """JQL query format for listing all issues with worklogs to read."""
 
-    def __init__(self, config):
-        # type: (dict) -> None
+    def __init__(self, config: dict) -> None:
         """Initialize with credentials from the *config* dict."""
         self._jira = JIRA(config["url"], basic_auth=(config["email"], config["jira_token"]))
         self._project_key = config.get("project_key")
-        self.account_id = self._jira.myself()["accountId"]  # type: str
+        self.account_id: str = self._jira.myself()["accountId"]
 
-    def _issues(self, query):
-        # type: (str) -> Iterator[jira.Issue]
+    def _issues(self, query: str) -> Iterator[jira.Issue]:
         """Issues iterator."""
         issue_index = 1
         max_results = 50
@@ -177,12 +169,10 @@ class JIRAClient(object):  # pylint:disable=too-few-public-methods
             if len(search_results) < max_results:
                 return
 
-    def get_worklogs(self, from_date, single_user=True):
-        # type: (date, bool) -> Iterator[Worklog]
+    def get_worklogs(self, from_date: date, single_user: bool = True) -> Iterator[Worklog]:
         """
         Return all recent worklogs for the specified user.
 
-        :rtype: iterator
         :returns: yields Worklog instances
         """
         for issue in self._issues(self._ISSUE_JQL.format(from_date, project_key=self._project_key)):
@@ -201,29 +191,26 @@ class JIRAClient(object):  # pylint:disable=too-few-public-methods
                 yield worklog
 
 
-def get_tempo_client(config):
-    # type: (dict) -> TempoClient
+def get_tempo_client(config: dict) -> TempoClient:
     """Return a Tempo client for the source of worklogs specified in *config*."""
     jira_client = JIRAClient(config)
     return TempoClient(config["tempo_token"], jira_client.account_id)
 
 
-def get_client(config):
-    # type: (dict) -> Union[TempoClient, JIRAClient]
+def get_client(config: dict) -> Union[TempoClient, JIRAClient]:
     """Return a client for the source of worklogs specified in *config*."""
     if "tempo_token" in config and config["tempo_token"]:
         return get_tempo_client(config)
     return JIRAClient(config)
 
 
-def get_worklogs(config, since, all_users=False):
-    # type: (dict, arrow.Arrow, bool) -> Iterator[Worklog]
+def get_worklogs(config: dict, since: arrow.Arrow, all_users: bool = False) -> Iterator[Worklog]:
     """
     Yield user's recent worklogs.
 
-    :param dict config: JIRA configuration
-    :param arrow.Arrow since: earliest start time of yielded worklogs
-    :param bool all_users: if True, yield also worklogs from other users if available
+    :param config: JIRA configuration
+    :param since: earliest start time of yielded worklogs
+    :param all_users: if True, yield also worklogs from other users if available
     """
     for worklog in get_client(config).get_worklogs(
         from_date=since.date(),
@@ -235,8 +222,7 @@ def get_worklogs(config, since, all_users=False):
         yield worklog
 
 
-def format_time(seconds):
-    # type: (int) -> str
+def format_time(seconds: int) -> str:
     """
     Return *seconds* in a human-readable format (e.g. 25h 15m 45s).
 
@@ -258,15 +244,13 @@ AUTO_WORKLOG = re.compile(r"TIMEMACHINE_WID (?P<id>\d+).*")
 """Regexp to detect the automatic worklog in Destination JIRA."""
 
 
-def match_worklog(source_worklogs, worklog):
-    # type: (Dict[int, Worklog], Worklog) -> Optional[Worklog]
+def match_worklog(source_worklogs: Dict[int, Worklog], worklog: Worklog) -> Optional[Worklog]:
     """
     Return a matching source worklog for the given destination worklog.
 
-    :param dict source_worklogs: a mapping from source JIRA worklog ID to `Worklog` instance
-    :param Worklog worklog: destination JIRA worklog
+    :param source_worklogs: a mapping from source JIRA worklog ID to `Worklog` instance
+    :param worklog: destination JIRA worklog
 
-    :rtype: Worklog
     :returns: a worklog from *source_worklogs* that was previously copied into the destination JIRA as *worklog*, or
         None if *worklog* has no corresponding source worklo
     """
@@ -284,8 +268,7 @@ def match_worklog(source_worklogs, worklog):
 @click.command()
 @click.option("--config", help="Config path", type=click.File())
 @click.option("--days", help="How many days back to look", default=1)
-def timemachine(config, days):
-    # type: (IO[str], int) -> None
+def timemachine(config: IO[str], days: int) -> None:
     """Copy worklogs from source Jira issues to the destination Jira issue."""
     config_dict = json.load(config)
     utcnow = arrow.utcnow()
@@ -345,15 +328,13 @@ def timemachine(config, days):
     "--since", help="Date from which to start listing (defaults to the start of the current month)", default=""
 )
 @click.option("--pm", "is_pm", help="Show time spent by all users", type=bool, default=False, is_flag=True)
-def timecheck(config, since, is_pm):
-    # type: (IO[str], str, bool) -> None
+def timecheck(config: IO[str], since: str, is_pm: bool) -> None:
     """List time spent per day and overall on the source JIRA."""
     config_dict = json.load(config)
     start = arrow.get(since) if since else arrow.utcnow().floor("month")
     total = 0
 
-    def worklog_key(worklog):
-        # type: (Worklog) -> Tuple[date, str]
+    def worklog_key(worklog: Worklog) -> Tuple[date, str]:
         """Return the worklog grouping key."""
         return (worklog.started.date(), worklog.author)
 
