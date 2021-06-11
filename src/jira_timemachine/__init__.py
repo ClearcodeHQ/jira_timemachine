@@ -13,9 +13,9 @@ import itertools
 import json
 from datetime import date, timedelta
 import time
-from typing import Iterator, Dict, List, IO, TypeVar, Callable, Optional, Tuple, Union, Text
+from dataclasses import dataclass
+from typing import Iterator, Dict, List, IO, TypeVar, Callable, Optional, Tuple, Union
 
-import attr
 import click
 from click import ClickException
 import arrow
@@ -27,24 +27,24 @@ from requests import HTTPError
 __version__ = "0.0.0"
 
 
-@attr.s  # pylint:disable=too-few-public-methods
+@dataclass
 class Worklog(object):
     """JIRA or Tempo worklog."""
 
-    id = attr.ib(type=int)  # pylint:disable=invalid-name
+    id: int
     """
     JIRA worklog ID.
 
     Each Tempo worklog has separate Jira and Tempo worklog IDs. We use Jira IDs so worklogs can be idempotently synced
     if a Jira instance adds/removes Tempo.
     """
-    tempo_id = attr.ib(type=Optional[int])
+    tempo_id: Optional[int]
     """Tempo worklog ID or None for plain Jira worklogs."""
-    started = attr.ib(type=arrow.Arrow)
-    time_spent_seconds = attr.ib(type=int)
-    description = attr.ib(type=Text)
-    author = attr.ib(type=Text)
-    issue = attr.ib(type=Text)
+    started: arrow.Arrow
+    time_spent_seconds: int
+    description: str
+    author: str
+    issue: str
 
     def to_tempo(self):
         # type: () -> dict
@@ -353,7 +353,7 @@ def timecheck(config, since, is_pm):
     total = 0
 
     def worklog_key(worklog):
-        # type: (Worklog) -> Tuple[date, Text]
+        # type: (Worklog) -> Tuple[date, str]
         """Return the worklog grouping key."""
         return (worklog.started.date(), worklog.author)
 
