@@ -24,7 +24,7 @@ import jira
 import requests
 from requests import HTTPError
 
-__version__ = "0.0.0"
+__version__ = "1.0.0"
 
 
 @attr.s  # pylint:disable=too-few-public-methods
