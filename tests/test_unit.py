@@ -1,9 +1,9 @@
 """Tests not using external services."""
 
 from datetime import date
+from unittest.mock import patch, call
 
 import arrow
-from mock import patch, call
 import pytest
 
 from jira_timemachine import Worklog, get_worklogs, format_time, match_worklog
