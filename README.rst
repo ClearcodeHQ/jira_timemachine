@@ -34,6 +34,21 @@ Running ``timemachine`` again does not move existing worklogs. Do not remove des
 while they have matching worklogs: only known destination issues are searched for copied worklogs, ones present
 elsewhere will be duplicated.
 
+Tempo dependency
+----------------
+
+The destination JIRA must have the `Tempo <https://www.tempo.io/>`__ plugin. It is
+optional for the source JIRA (and the ``timecheck`` command can be used as an
+alternative to the builtin JIRA time tracking reports).
+
+When source JIRA has Tempo and its token is provided, ``timemachine`` accesses all
+worklogs of the user; if Tempo is not used, only a single project (specified via
+``project_key``) is synchronized.
+
+In case of the source JIRA gaining or losing Tempo (and the configuration having the
+token only when Tempo is used), we attempt to keep ``timemachine`` idempotent: worklogs
+are identified by their JIRA IDs, not Tempo IDs.
+
 Use via Docker
 --------------
 
