@@ -6,3 +6,16 @@ build-backend = "setuptools.build_meta"
 line-length = 120
 target-version = ['py39']
 include = '.*\.pyi?$'
+
+[tool.mypy]
+check_untyped_defs = true
+mypy_path = "src"
+incremental = true
+
+[[tool.mypy.overrides]]
+module = "jira_timemachine.*"
+disallow_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = ["jira.*"]
+ignore_missing_imports = true
