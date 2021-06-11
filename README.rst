@@ -39,8 +39,8 @@ Use via Docker
 
 Run ``timemachine``::
 
-  docker run --rm -v $PWD/example_config:/config clearcode/jira_timemachine timemachine --config /config/config.json
+  docker run --rm -v $PWD/example_config:/config clearcode/jira_timemachine:v0.0.0 timemachine --config /config/config.json
 
 Run ``timecheck``::
 
-  docker run --rm -v $PWD/example_config:/config clearcode/jira_timemachine timecheck --config /config/config.json
+  docker run --rm -v $PWD/example_config:/config clearcode/jira_timemachine:v0.0.0 timecheck --config /config/config.json
