@@ -45,7 +45,8 @@ class SourceJiraConfig(BaseJiraConfig):
     )
     project_key: str = Field(
         "",
-        description="If not using Tempo, key of the project that worklogs are synced from; if using Tempo, worklogs from all projects are synced and this field is ignored.",
+        description="If not using Tempo, key of the project that worklogs are synced from;"
+        " if using Tempo, worklogs from all projects are synced and this field is ignored.",
     )
 
 
@@ -62,7 +63,8 @@ class Config(BaseModel):
     destination_jira: DestinationJiraConfig
     issue_map: Dict[str, str] = Field(
         default_factory=dict,
-        description="Override of destination issue; keys are source Jira issue keys and values are corresponding destination Jira issue keys.",
+        description="Override of destination issue; keys are source Jira issue keys"
+        " and values are corresponding destination Jira issue keys.",
     )
 
 
