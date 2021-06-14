@@ -21,14 +21,53 @@ from click import ClickException
 import arrow
 from jira import JIRA
 import jira
+from pydantic import BaseModel, HttpUrl, Field, ValidationError
 import requests
 from requests import HTTPError
 
 __version__ = "1.0.0"
 
 
+class BaseJiraConfig(BaseModel):
+    """Common Jira configuration."""
+
+    url: HttpUrl
+    email: str = Field("", description="Jira user email.")
+    jira_token: str
+    tempo_token: str
+
+
+class SourceJiraConfig(BaseJiraConfig):
+    """Source Jira configuration."""
+
+    tempo_token: str = Field(
+        "", description="Tempo token: if empty or missing, Jira API is used to sync worklogs from a single project."
+    )
+    project_key: str = Field(
+        "",
+        description="If not using Tempo, key of the project that worklogs are synced from; if using Tempo, worklogs from all projects are synced and this field is ignored.",
+    )
+
+
+class DestinationJiraConfig(BaseJiraConfig):
+    """Destination Jira configuration."""
+
+    issue: str = Field(description="Issue key where worklogs of issues not overriden by ``issue_map`` are copied.")
+
+
+class Config(BaseModel):
+    """Timemachine configuration."""
+
+    source_jira: SourceJiraConfig
+    destination_jira: DestinationJiraConfig
+    issue_map: Dict[str, str] = Field(
+        default_factory=dict,
+        description="Override of destination issue; keys are source Jira issue keys and values are corresponding destination Jira issue keys.",
+    )
+
+
 @dataclass
-class Worklog(object):
+class Worklog:
     """JIRA or Tempo worklog."""
 
     id: int
@@ -59,7 +98,7 @@ class Worklog(object):
         }
 
 
-class TempoClient(object):
+class TempoClient:
     """
     A client for Tempo Cloud APIs.
 
@@ -145,17 +184,25 @@ class TempoClient(object):
             click.echo(res.content)
 
 
-class JIRAClient(object):  # pylint:disable=too-few-public-methods
+class BaseJIRAClient:
     """A client for JIRA API."""
+
+    def __init__(self, config: BaseJiraConfig) -> None:
+        """Initialize with credentials from the *config* dict."""
+        self._jira = JIRA(config.url, basic_auth=(config.email, config.jira_token))
+        self.account_id: str = self._jira.myself()["accountId"]
+
+
+class JIRAClient(BaseJIRAClient):
+    """A client for JIRA API with worklog search."""
 
     _ISSUE_JQL = 'project = {project_key} AND updated >= "{0}" ORDER BY key ASC'
     """JQL query format for listing all issues with worklogs to read."""
 
-    def __init__(self, config: dict) -> None:
+    def __init__(self, config: SourceJiraConfig) -> None:
         """Initialize with credentials from the *config* dict."""
-        self._jira = JIRA(config["url"], basic_auth=(config["email"], config["jira_token"]))
-        self._project_key = config.get("project_key")
-        self.account_id: str = self._jira.myself()["accountId"]
+        super().__init__(config)
+        self._project_key = config.project_key
 
     def _issues(self, query: str) -> Iterator[jira.Issue]:
         """Issues iterator."""
@@ -191,20 +238,20 @@ class JIRAClient(object):  # pylint:disable=too-few-public-methods
                 yield worklog
 
 
-def get_tempo_client(config: dict) -> TempoClient:
+def get_tempo_client(config: BaseJiraConfig) -> TempoClient:
     """Return a Tempo client for the source of worklogs specified in *config*."""
-    jira_client = JIRAClient(config)
-    return TempoClient(config["tempo_token"], jira_client.account_id)
+    jira_client = BaseJIRAClient(config)
+    return TempoClient(config.tempo_token, jira_client.account_id)
 
 
-def get_client(config: dict) -> Union[TempoClient, JIRAClient]:
+def get_client(config: SourceJiraConfig) -> Union[TempoClient, JIRAClient]:
     """Return a client for the source of worklogs specified in *config*."""
-    if "tempo_token" in config and config["tempo_token"]:
+    if config.tempo_token:
         return get_tempo_client(config)
     return JIRAClient(config)
 
 
-def get_worklogs(config: dict, since: arrow.Arrow, all_users: bool = False) -> Iterator[Worklog]:
+def get_worklogs(config: SourceJiraConfig, since: arrow.Arrow, all_users: bool = False) -> Iterator[Worklog]:
     """
     Yield user's recent worklogs.
 
@@ -252,7 +299,7 @@ def match_worklog(source_worklogs: Dict[int, Worklog], worklog: Worklog) -> Opti
     :param worklog: destination JIRA worklog
 
     :returns: a worklog from *source_worklogs* that was previously copied into the destination JIRA as *worklog*, or
-        None if *worklog* has no corresponding source worklo
+        None if *worklog* has no corresponding source worklog
     """
     match = AUTO_WORKLOG.match(worklog.description)
     if not match:
@@ -265,31 +312,38 @@ def match_worklog(source_worklogs: Dict[int, Worklog], worklog: Worklog) -> Opti
         return None
 
 
+def get_config(ctx: click.Context, param: click.Parameter, value: IO[str]) -> Config:
+    """Return a `Config` instance from the given file object."""
+    try:
+        return Config.parse_raw(value.read())
+    except ValidationError as ex:
+        raise click.BadParameter(str(ex))
+
+
 @click.command()
-@click.option("--config", help="Config path", type=click.File())
+@click.option("--config", help="Config path", type=click.File(), callback=get_config)
 @click.option("--days", help="How many days back to look", default=1)
-def timemachine(config: IO[str], days: int) -> None:
+def timemachine(config: Config, days: int) -> None:
     """Copy worklogs from source Jira issues to the destination Jira issue."""
-    config_dict = json.load(config)
     utcnow = arrow.utcnow()
 
     # Automatic worklog message.
     worklog_msg = "TIMEMACHINE_WID {0.id}: {0.author} spent {0.time_spent_seconds}s on {0.issue} at {0.started}"
 
     source_worklogs = {
-        worklog.id: worklog for worklog in get_worklogs(config_dict["source_jira"], utcnow - timedelta(days=days))
+        worklog.id: worklog for worklog in get_worklogs(config.source_jira, utcnow - timedelta(days=days))
     }
 
-    # How mapping to multiple destination JIRA works: we have a default issue (config_dict['destination_jira']) and a
+    # How mapping to multiple destination JIRA works: we have a default issue (config.destination_jira) and a
     # mapping from source JIRA issue to a destination JIRA issue (config_dict['issue_map']) overriding it for specific
     # issues. If a worklog is already copied into any of these issues, it might get updated there. New worklogs are
     # created as specified in the mapping. No worklogs are moved or deleted.
-    dest_issues = {config_dict["destination_jira"]["issue"]} | set(config_dict.get("issue_map", {}).values())
+    dest_issues = {config.destination_jira.issue} | set(config.issue_map.values())
 
     # Query all recent user's worklogs and then filter by task. It should be faster than querying by issue and
     # filtering by user if several users sync worklogs to the same issue and the user doesn't have too many worklogs in
     # other issues (e.g. logging time to the destination Jira mostly via the timemachine).
-    destination_tempo = get_tempo_client(config_dict["destination_jira"])
+    destination_tempo = get_tempo_client(config.destination_jira)
     for ccworklog in destination_tempo.get_worklogs(
         from_date=(utcnow - timedelta(days=days)).date(),
     ):
@@ -315,22 +369,19 @@ def timemachine(config: IO[str], days: int) -> None:
 
         for source_worklog in worklogs:
             source_worklog.description = worklog_msg.format(source_worklog)
-            source_worklog.issue = config_dict.get("issue_map", {}).get(
-                source_worklog.issue, config_dict["destination_jira"]["issue"]
-            )
+            source_worklog.issue = config.issue_map.get(source_worklog.issue, config.destination_jira.issue)
             source_worklog.author = destination_tempo.account_id
             destination_tempo.post_worklog(source_worklog)
 
 
 @click.command()
-@click.option("--config", help="Config path", type=click.File())
+@click.option("--config", help="Config path", type=click.File(), callback=get_config)
 @click.option(
     "--since", help="Date from which to start listing (defaults to the start of the current month)", default=""
 )
 @click.option("--pm", "is_pm", help="Show time spent by all users", type=bool, default=False, is_flag=True)
-def timecheck(config: IO[str], since: str, is_pm: bool) -> None:
+def timecheck(config: Config, since: str, is_pm: bool) -> None:
     """List time spent per day and overall on the source JIRA."""
-    config_dict = json.load(config)
     start = arrow.get(since) if since else arrow.utcnow().floor("month")
     total = 0
 
@@ -339,7 +390,7 @@ def timecheck(config: IO[str], since: str, is_pm: bool) -> None:
         return (worklog.started.date(), worklog.author)
 
     for (day, author), worklogs in itertools.groupby(
-        sorted(get_worklogs(config_dict["source_jira"], start, all_users=is_pm), key=worklog_key),
+        sorted(get_worklogs(config.source_jira, start, all_users=is_pm), key=worklog_key),
         worklog_key,
     ):
         day_sum = sum(worklog.time_spent_seconds for worklog in worklogs)

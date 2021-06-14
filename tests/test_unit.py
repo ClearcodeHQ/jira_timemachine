@@ -1,12 +1,14 @@
 """Tests not using external services."""
 
 from datetime import date
-from unittest.mock import patch, call
+from io import StringIO
+from unittest.mock import patch, call, Mock
 
 import arrow
+import click
 import pytest
 
-from jira_timemachine import Worklog, get_worklogs, format_time, match_worklog
+from jira_timemachine import Worklog, get_worklogs, format_time, match_worklog, SourceJiraConfig, get_config
 
 
 def test_worklog_to_tempo():
@@ -73,7 +75,7 @@ def test_get_worklogs(all_users, single_user):
             issue="",
         ),
     ]
-    config = {"magic": True, "login": "the.user"}
+    config = SourceJiraConfig(url="https://jira.invalid/", email="user@domain.invalid", jira_token="magic")
     with patch("jira_timemachine.get_client") as mock_get_client:
         mock_get_client.return_value.get_worklogs.return_value = iter(old_sample_worklogs + recent_sample_worklogs)
         assert list(get_worklogs(config, arrow.get("2018-11-16"), all_users)) == recent_sample_worklogs
@@ -133,4 +135,74 @@ def test_match_worklog():
     assert (
         match_worklog(source_worklogs, make(125, "TIMEMACHINE_WID 124: X spent 1440s on Y-126 at 2018-11-16T12:34:01Z"))
         is w124
+    )
+
+
+def test_get_config_ok():
+    """Test that a valid config is parsed."""
+    config_file = StringIO(
+        """{
+  "source_jira": {
+    "url": "https://source.atlassian.net",
+    "email": "login@login.com",
+    "jira_token": "a",
+    "project_key": "JIRA",
+    "tempo_token": "b"
+  },
+  "destination_jira": {
+    "url": "https://destination.atlassian.net",
+    "email": "login@login.com",
+    "jira_token": "c",
+    "issue": "ARIJ-3",
+    "tempo_token": "d"
+  },
+  "issue_map": {
+    "JIRA-101": "ARIJ-1",
+    "JIRA-102": "ARIJ-2"
+  }
+}"""
+    )
+    config = get_config(Mock(), Mock(), config_file)
+    assert config.source_jira.url == "https://source.atlassian.net"
+    assert config.source_jira.email == "login@login.com"
+    assert config.source_jira.jira_token == "a"
+    assert config.source_jira.project_key == "JIRA"
+    assert config.source_jira.tempo_token == "b"
+    assert config.destination_jira.url == "https://destination.atlassian.net"
+    assert config.destination_jira.email == "login@login.com"
+    assert config.destination_jira.jira_token == "c"
+    assert config.destination_jira.issue == "ARIJ-3"
+    assert config.destination_jira.tempo_token == "d"
+    assert config.issue_map == {"JIRA-101": "ARIJ-1", "JIRA-102": "ARIJ-2"}
+
+
+def test_get_config_invalid():
+    """Test that we get a proper exception on an invalid config."""
+    config_file = StringIO(
+        """{
+  "source_jira": {
+    "url": "https://source.atlassian.net",
+    "email": "login@login.com",
+    "project_key": "JIRA",
+    "tempo_token": "b"
+  },
+  "destination_jira": {
+    "url": "https://destination.atlassian.net",
+    "email": "login@login.com",
+    "jira_token": "c",
+    "issue": "ARIJ-3",
+    "tempo_token": "d"
+  },
+  "issue_map": {
+    "JIRA-101": "ARIJ-1",
+    "JIRA-102": "ARIJ-2"
+  }
+}"""
+    )
+    with pytest.raises(click.BadParameter) as exc_info:
+        get_config(Mock(), Mock(), config_file)
+
+    assert (
+        exc_info.value.message
+        == "1 validation error for Config\nsource_jira -> jira_token\n  field required (type=value_error.missing)"
     )
