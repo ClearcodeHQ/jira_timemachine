@@ -13,10 +13,21 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
+from pathlib import Path
+
+
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 # sys.path.insert(0, os.path.abspath('.'))
+
+def setup(app):
+    """Prepare files included in the documentation."""
+    from jira_timemachine import Config
+
+    with (Path(__file__).parent / "config-schema.json").open("w") as f:
+        f.write(Config.schema_json())
+
 
 # -- General configuration -----------------------------------------------------
 
@@ -25,7 +36,7 @@
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ["sphinx.ext.autodoc", "sphinx.ext.viewcode", "sphinx.ext.intersphinx"]
+extensions = ["sphinx.ext.autodoc", "sphinx.ext.viewcode", "sphinx.ext.intersphinx", 'sphinx-jsonschema']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -51,7 +62,7 @@ copyright = "2016, " + author
 #
 # The short X.Y version.
 
-from pypt import __version__
+from jira_timemachine import __version__
 
 # The full version, including alpha/beta/rc tags.
 release = __version__
