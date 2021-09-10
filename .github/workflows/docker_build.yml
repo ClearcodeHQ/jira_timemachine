@@ -1,0 +1,17 @@
+name: Test build docker
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: Build Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: Build Jira Timemechine docker image
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          push: false
