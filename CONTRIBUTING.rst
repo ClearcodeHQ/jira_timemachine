@@ -1,5 +1,5 @@
 Contribute to JIRA Time Machine
-==============
+===============================
 
 Thank you for taking time to contribute to JIRA Time Machine!
 

@@ -6,8 +6,10 @@ Contents
 .. toctree::
    :maxdepth: 2
 
+   config
    contributing
    changelog
+   authors
 
 
 License

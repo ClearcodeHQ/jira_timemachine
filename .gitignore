@@ -42,3 +42,6 @@ nosetests.xml
 htmlcov
 
 .vscode
+
+# Generated file.
+docs/source/config-schema.json
