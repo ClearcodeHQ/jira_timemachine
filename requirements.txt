@@ -1,4 +1,4 @@
-arrow==1.1.1
+arrow==1.2.0
 Click==8.0.1
 types-click==7.1.5
 jira==3.0.1
