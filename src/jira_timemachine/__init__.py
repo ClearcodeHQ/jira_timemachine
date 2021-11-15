@@ -21,6 +21,7 @@ from click import ClickException
 import arrow
 from jira import JIRA
 import jira
+from jira.client import ResultList
 from pydantic import BaseModel, HttpUrl, Field, ValidationError
 import requests
 from requests import HTTPError
@@ -211,7 +212,14 @@ class JIRAClient(BaseJIRAClient):
         issue_index = 1
         max_results = 50
         while True:
-            search_results = self._jira.search_issues(jql_str=query, startAt=issue_index, maxResults=max_results)
+            search_results = self._jira.search_issues(
+                jql_str=query,
+                startAt=issue_index,
+                maxResults=max_results,
+                json_result=False,
+            )
+            # We do not return json response.
+            assert type(search_results) == ResultList
             for issue in search_results:
                 yield issue
             issue_index += max_results
