@@ -1,5 +1,5 @@
 arrow==1.2.2
-Click==8.0.4
+Click==8.1.0
 types-click==7.1.8
 jira==3.1.1
 pydantic==1.9.0
