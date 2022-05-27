@@ -4,4 +4,4 @@ types-click==7.1.8
 jira==3.2.0
 pydantic==1.9.1
 requests==2.27.1
-types-requests==2.27.28
+types-requests==2.27.29
