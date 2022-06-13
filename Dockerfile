@@ -1,4 +1,4 @@
-FROM python:3.10.4-slim-buster as app
+FROM python:3.10.5-slim-buster as app
 
 WORKDIR /usr/src/app
 # Install required dependencies and cache test dependencies, so they won't be redownloaded when updating after the code
