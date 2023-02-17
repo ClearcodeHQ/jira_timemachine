@@ -12,7 +12,7 @@ jobs:
     with:
       pipenv: true
       pipenv-install-options: "--skip-lock"
-      python-versions: '[3.8, 3.9, "3.10"]'
+      python-versions: '[3.9, "3.10", "3.11"]'
     secrets:
       codecov_token: ${{ secrets.CODECOV_TOKEN }}
 

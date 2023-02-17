@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+"""Old installation module."""
 
 from setuptools import setup  # type: ignore
 

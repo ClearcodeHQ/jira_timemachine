@@ -42,3 +42,10 @@ showcontent = true
 [tool.towncrier.fragment.misc]
 name = "Miscellaneus"
 showcontent = true
+
+[tool.pytest.ini_options]
+xfail_strict = true
+filterwarnings = [
+    "error",
+    "ignore:'imghdr' is deprecated and slated for removal in Python 3.13:DeprecationWarning",
+]
