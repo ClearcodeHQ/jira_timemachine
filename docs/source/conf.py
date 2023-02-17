@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+"""Sphinx docs configuration module."""
 # Copyright (c) 2016 by JIRA Time Machine authors and contributors <see AUTHORS file>
 #
 # This module is part of JIRA Time Machine and is released under
