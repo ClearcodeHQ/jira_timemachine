@@ -1,0 +1,240 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>jira_timemachine &#8212; JIRA Time Machine 1.0.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css" />
+    
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Full configuration schema" href="config.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="config.html" title="Full configuration schema"
+             accesskey="N">next</a> |</li>
+        <li class="nav-item nav-item-0"><a href="#">JIRA Time Machine 1.0.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">jira_timemachine</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="jira-timemachine">
+<h1>jira_timemachine<a class="headerlink" href="#jira-timemachine" title="Permalink to this heading">¶</a></h1>
+<p>This package copies worklogs from a source JIRA to an issue in a destination JIRA. It’s idempotent: rerunning it
+updates already copied worklogs instead of duplicating them.</p>
+<p>To re-write your worklog for the last three days from one JIRA to another, use timemachine command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">timemachine</span> <span class="o">--</span><span class="n">config</span> <span class="n">example_config</span><span class="o">/</span><span class="n">config</span><span class="o">.</span><span class="n">json</span> <span class="o">--</span><span class="n">days</span> <span class="mi">3</span>
+</pre></div>
+</div>
+<p>Check the example config for the needed fields; both JIRA and Tempo require personal access tokens, see
+&lt;<a class="reference external" href="https://support.atlassian.com/atlassian-account/docs/manage-api-tokens-for-your-atlassian-account/">https://support.atlassian.com/atlassian-account/docs/manage-api-tokens-for-your-atlassian-account/</a>&gt; and
+&lt;<a class="reference external" href="https://apidocs.tempo.io/">https://apidocs.tempo.io/</a>&gt;.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Timemachine will use regular JIRA’s worklogs to read worklogs from if you
+won’t have <em>tempo_token</em> configuration key, or have it empty.</p>
+</div>
+<section id="issue-mapping">
+<h2>Issue mapping<a class="headerlink" href="#issue-mapping" title="Permalink to this heading">¶</a></h2>
+<p>In a simple case, all worklogs are copied into a single destination JIRA issue: specify it as the
+<code class="docutils literal notranslate"><span class="pre">destination_jira.issue</span></code> key in the config.</p>
+<p>To copy worklogs of specific other issues to different issues, specify them in the <code class="docutils literal notranslate"><span class="pre">issue_map</span></code> config key: it’s an
+object with keys of source JIRA keys mapped to destination JIRA views. If a key is missing, <code class="docutils literal notranslate"><span class="pre">destination_jira.issue</span></code>
+is used to choose the target issue.</p>
+<p>Running <code class="docutils literal notranslate"><span class="pre">timemachine</span></code> again does not move existing worklogs. Do not remove destination issues from the <code class="docutils literal notranslate"><span class="pre">issue_map</span></code>
+while they have matching worklogs: only known destination issues are searched for copied worklogs, ones present
+elsewhere will be duplicated.</p>
+</section>
+<section id="tempo-dependency">
+<h2>Tempo dependency<a class="headerlink" href="#tempo-dependency" title="Permalink to this heading">¶</a></h2>
+<p>The destination JIRA must have the <a class="reference external" href="https://www.tempo.io/">Tempo</a> plugin. It is
+optional for the source JIRA (and the <code class="docutils literal notranslate"><span class="pre">timecheck</span></code> command can be used as an
+alternative to the builtin JIRA time tracking reports).</p>
+<p>When source JIRA has Tempo and its token is provided, <code class="docutils literal notranslate"><span class="pre">timemachine</span></code> accesses all
+worklogs of the user; if Tempo is not used, only a single project (specified via
+<code class="docutils literal notranslate"><span class="pre">project_key</span></code>) is synchronized.</p>
+<p>In case of the source JIRA gaining or losing Tempo (and the configuration having the
+token only when Tempo is used), we attempt to keep <code class="docutils literal notranslate"><span class="pre">timemachine</span></code> idempotent: worklogs
+are identified by their JIRA IDs, not Tempo IDs.</p>
+</section>
+<section id="use-via-docker">
+<h2>Use via Docker<a class="headerlink" href="#use-via-docker" title="Permalink to this heading">¶</a></h2>
+<p>Run <code class="docutils literal notranslate"><span class="pre">timemachine</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>docker run --rm -v $PWD/example_config:/config clearcode/jira_timemachine:v1.0.0 timemachine --config /config/config.json
+</pre></div>
+</div>
+<p>Run <code class="docutils literal notranslate"><span class="pre">timecheck</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>docker run --rm -v $PWD/example_config:/config clearcode/jira_timemachine:v1.0.0 timecheck --config /config/config.json
+</pre></div>
+</div>
+</section>
+<section id="example-configs">
+<h2>Example configs<a class="headerlink" href="#example-configs" title="Permalink to this heading">¶</a></h2>
+<p>Mapping worklogs from the <code class="docutils literal notranslate"><span class="pre">source.atlassian.net</span></code> jira project <code class="docutils literal notranslate"><span class="pre">JIRA</span></code> to the
+<code class="docutils literal notranslate"><span class="pre">ARIJ-123</span></code> issue on <code class="docutils literal notranslate"><span class="pre">destination.atlassian.net</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="s2">&quot;source_jira&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;https://source.atlassian.net&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="s2">&quot;login@login.com&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;jira_token&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;project_key&quot;</span><span class="p">:</span> <span class="s2">&quot;JIRA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;tempo_token&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span>
+  <span class="p">},</span>
+  <span class="s2">&quot;destination_jira&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;https://destination.atlassian.net&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="s2">&quot;login@login.com&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;jira_token&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;issue&quot;</span><span class="p">:</span> <span class="s2">&quot;ARIJ-123&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;tempo_token&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span>
+  <span class="p">},</span>
+  <span class="s2">&quot;issue_map&quot;</span><span class="p">:</span> <span class="p">{</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Mapping <code class="docutils literal notranslate"><span class="pre">JIRA-101</span></code> to <code class="docutils literal notranslate"><span class="pre">ARIJ-1</span></code>, <code class="docutils literal notranslate"><span class="pre">JIRA-102</span></code> to <code class="docutils literal notranslate"><span class="pre">ARIJ-2</span></code> and every other issue to
+<code class="docutils literal notranslate"><span class="pre">ARIJ-3</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="s2">&quot;source_jira&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;https://source.atlassian.net&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="s2">&quot;login@login.com&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;jira_token&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;project_key&quot;</span><span class="p">:</span> <span class="s2">&quot;JIRA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;tempo_token&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span>
+  <span class="p">},</span>
+  <span class="s2">&quot;destination_jira&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;https://destination.atlassian.net&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="s2">&quot;login@login.com&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;jira_token&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;issue&quot;</span><span class="p">:</span> <span class="s2">&quot;ARIJ-3&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;tempo_token&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span>
+  <span class="p">},</span>
+  <span class="s2">&quot;issue_map&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">&quot;JIRA-101&quot;</span><span class="p">:</span> <span class="s2">&quot;ARIJ-1&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;JIRA-102&quot;</span><span class="p">:</span> <span class="s2">&quot;ARIJ-2&quot;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>In any of these examples, provide your own tokens; delete the <code class="docutils literal notranslate"><span class="pre">tempo_token</span></code> field in
+<code class="docutils literal notranslate"><span class="pre">source_jira</span></code> or leave it blank if that JIRA has no Tempo plugin.</p>
+</section>
+<section id="contents">
+<h2>Contents<a class="headerlink" href="#contents" title="Permalink to this heading">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="config.html">Full configuration schema</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="config.html#config">Config</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contribute to JIRA Time Machine</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="contributing.html#bug-reports">Bug Reports</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contributing.html#feature-requests-proposals">Feature requests/proposals</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contributing.html#pull-requests">Pull requests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contributing.html#commits">Commits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contributing.html#coding-style">Coding style</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">CHANGELOG</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id2">1.0.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id3">0.0.0</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+</ul>
+</div>
+</section>
+<section id="license">
+<h2>License<a class="headerlink" href="#license" title="Permalink to this heading">¶</a></h2>
+<p>Copyright (c) 2016 by pypt authors and contributors. See <a class="reference internal" href="authors.html#authors"><span class="std std-ref">Authors</span></a></p>
+<p>This module is part of JIRA Time Machine and is released under
+the MIT License (MIT): <a class="reference external" href="http://opensource.org/licenses/MIT">http://opensource.org/licenses/MIT</a></p>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="#">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">jira_timemachine</a><ul>
+<li><a class="reference internal" href="#issue-mapping">Issue mapping</a></li>
+<li><a class="reference internal" href="#tempo-dependency">Tempo dependency</a></li>
+<li><a class="reference internal" href="#use-via-docker">Use via Docker</a></li>
+<li><a class="reference internal" href="#example-configs">Example configs</a></li>
+<li><a class="reference internal" href="#contents">Contents</a></li>
+<li><a class="reference internal" href="#license">License</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="config.html"
+                          title="next chapter">Full configuration schema</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/index.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="config.html" title="Full configuration schema"
+             >next</a> |</li>
+        <li class="nav-item nav-item-0"><a href="#">JIRA Time Machine 1.0.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">jira_timemachine</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Grzegorz Śliwiński.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 6.1.3.
+    </div>
+  </body>
+</html>
