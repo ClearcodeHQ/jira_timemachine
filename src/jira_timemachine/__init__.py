@@ -376,7 +376,6 @@ def timemachine(config: Config, days: int) -> None:
     click.echo("Writing {0} worklogs to Destination JIRA".format(len(source_worklogs)))
 
     with click.progressbar(source_worklogs.values(), label="Writing worklog") as worklogs:
-
         for source_worklog in worklogs:
             source_worklog.description = worklog_msg.format(source_worklog)
             source_worklog.issue = config.issue_map.get(source_worklog.issue, config.destination_jira.issue)
