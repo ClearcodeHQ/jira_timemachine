@@ -1,6 +1,66 @@
+[project]
+name = "jira_timemachine"
+version = "1.0.0"
+description = "Synchronize worklogs between Jira instances"
+readme = "README.rst"
+keywords = ["jira", "worklog", "timesheet"]
+license = {file = "LICENSE"}
+authors = [
+    {name = "Grzegorz Śliwiński", email = "fizyk+pypi@fizyk.dev"}
+]
+maintainers = [
+    {name = "Michał Masłowski", email = "m.maslowski@clearcode.cc"}
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+requires-python = ">= 3.9"
+dependencies = [
+    "arrow>=1.1.0",
+    "Click>=8.0.1",
+    "types-click>=7.1.0",
+    "jira>=3.0.1",
+    "pydantic>=1.8.2",
+    "requests>=2.25.1",
+    "types-requests>=0.1.9",
+]
+
+[project.urls]
+"Source" = "https://github.com/ClearcodeHQ/jira_timemachine"
+"Bug Tracker" = "https://github.com/ClearcodeHQ/jira_timemachine/issues"
+"Changelog" = "https://github.com/ClearcodeHQ/jira_timemachine/blob/v1.0.0/CHANGES.rst"
+"Documentation" = "http://clearcodehq.github.io/jira_timemachine/"
+
+[project.optional-dependencies]
+docs = [
+    "sphinx",
+    "sphinx-jsonschema",
+]
+
+[project.scripts]
+timemachine = "jira_timemachine:timemachine"
+timecheck = "jira_timemachine:timecheck"
+
 [build-system]
-requires = ["setuptools >= 40.6.0", "wheel"]
+requires = ["setuptools >= 61.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+zip-safe = true
+
+[tool.setuptools.packages.find]
+include = ["jira_timemachine*"]
+exclude = ["tests*"]
+namespaces = false
 
 [tool.black]
 line-length = 120

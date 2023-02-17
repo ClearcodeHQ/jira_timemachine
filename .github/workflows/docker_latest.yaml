@@ -28,5 +28,6 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
+          target: app
           push: true
           tags: clearcode/jira_timemachine:latest
