@@ -19,3 +19,26 @@ disallow_untyped_defs = true
 [[tool.mypy.overrides]]
 module = ["jira.*"]
 ignore_missing_imports = true
+
+
+[tool.towncrier]
+directory = "newsfragments"
+single_file=true
+filename="CHANGES.rst"
+issue_format="`#{issue} <https://https://github.com/ClearcodeHQ/jira_timemachine/issues/{issue}>`_"
+
+[tool.towncrier.fragment.feature]
+name = "Features"
+showcontent = true
+
+[tool.towncrier.fragment.bugfix]
+name = "Bugfixes"
+showcontent = true
+
+[tool.towncrier.fragment.break]
+name = "Breaking changes"
+showcontent = true
+
+[tool.towncrier.fragment.misc]
+name = "Miscellaneus"
+showcontent = true
