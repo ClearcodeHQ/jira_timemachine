@@ -8,7 +8,11 @@ on:
 
 jobs:
   tests:
-    uses: fizyk/actions-reuse/.github/workflows/tests-pytests.yml@v1.1.2
+    uses: fizyk/actions-reuse/.github/workflows/tests-pytests.yml@v1.6.4
     with:
+      pipenv: true
+      pipenv-install-options: "--skip-lock"
       python-versions: '[3.8, 3.9, "3.10"]'
-      cover_package: jira_timemachine
+    secrets:
+      codecov_token: ${{ secrets.CODECOV_TOKEN }}
+
