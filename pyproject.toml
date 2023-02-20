@@ -38,7 +38,7 @@ dependencies = [
 "Source" = "https://github.com/ClearcodeHQ/jira_timemachine"
 "Bug Tracker" = "https://github.com/ClearcodeHQ/jira_timemachine/issues"
 "Changelog" = "https://github.com/ClearcodeHQ/jira_timemachine/blob/v1.0.0/CHANGES.rst"
-"Documentation" = "http://clearcodehq.github.io/jira_timemachine/"
+"Documentation" = "https://clearcodehq.github.io/jira_timemachine/"
 
 [project.optional-dependencies]
 docs = [

@@ -1,4 +1,7 @@
 """Sphinx docs configuration module."""
+import os
+import sys
+
 # Copyright (c) 2016 by JIRA Time Machine authors and contributors <see AUTHORS file>
 #
 # This module is part of JIRA Time Machine and is released under
@@ -15,6 +18,10 @@
 
 from pathlib import Path
 from typing import List, Dict
+
+
+p = Path(os.getcwd())
+sys.path.append(str(p.parent.parent))
 
 
 # If extensions (or modules to document with autodoc) are in another directory,
