@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "34da1e431bd4463feebe1f7dc2d594ea30b9e148e9a77015e036efb168318533"
+            "sha256": "e51f6564ab012251266dd12f36640560bee88964d8c6f94d80155b5121548213"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -776,14 +776,6 @@
             ],
             "version": "==0.10.2"
         },
-        "tomli": {
-            "hashes": [
-                "sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc",
-                "sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f"
-            ],
-            "markers": "python_version >= '3.7'",
-            "version": "==2.0.1"
-        },
         "tomlkit": {
             "hashes": [
                 "sha256:07de26b0d8cfc18f871aec595fda24d95b08fef89d147caa861939f37230bf4b",
@@ -794,11 +786,11 @@
         },
         "towncrier": {
             "hashes": [
-                "sha256:3b780c3d966e1b26414830aec3d15000654b31e64e024f3e5fd128b4c6eb8f47",
-                "sha256:7d3839b033859b45fb55df82b74cfd702431933c0cc9f287a5a7ea3e05d042cb"
+                "sha256:9767a899a4d6856950f3598acd9e8f08da2663c49fdcda5ea0f9e6ba2afc8eea",
+                "sha256:9c49d7e75f646a9aea02ae904c0bc1639c8fd14a01292d2b123b8d307564034d"
             ],
             "index": "pypi",
-            "version": "==22.8"
+            "version": "==22.12.0"
         },
         "typing-extensions": {
             "hashes": [
