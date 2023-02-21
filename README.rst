@@ -54,11 +54,11 @@ Use via Docker
 
 Run ``timemachine``::
 
-  docker run --rm -v $PWD/example_config:/config clearcode/jira_timemachine:v1.0.0 timemachine --config /config/config.json
+  docker run --rm -v $PWD/example_config:/config clearcode/jira_timemachine:v1.0.1 timemachine --config /config/config.json
 
 Run ``timecheck``::
 
-  docker run --rm -v $PWD/example_config:/config clearcode/jira_timemachine:v1.0.0 timecheck --config /config/config.json
+  docker run --rm -v $PWD/example_config:/config clearcode/jira_timemachine:v1.0.1 timecheck --config /config/config.json
 
 Example configs
 ---------------

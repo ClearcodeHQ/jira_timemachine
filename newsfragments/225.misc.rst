@@ -1,1 +1,0 @@
-Migrate the automerge pipeline to the shared one. Requiring github app to authenticate.

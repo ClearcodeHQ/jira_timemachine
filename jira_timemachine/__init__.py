@@ -26,7 +26,7 @@ from pydantic import BaseModel, HttpUrl, Field, ValidationError
 import requests
 from requests import HTTPError
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 
 class BaseJiraConfig(BaseModel):
