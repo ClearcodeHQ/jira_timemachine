@@ -7,6 +7,7 @@ from unittest.mock import patch, call, Mock
 import arrow
 import click
 import pytest
+from pydantic import HttpUrl, parse_obj_as
 
 from jira_timemachine import Worklog, get_worklogs, format_time, match_worklog, SourceJiraConfig, get_config
 
@@ -75,7 +76,13 @@ def test_get_worklogs(all_users, single_user):
             issue="",
         ),
     ]
-    config = SourceJiraConfig(url="https://jira.invalid/", email="user@domain.invalid", jira_token="magic")
+    config = SourceJiraConfig(
+        url=parse_obj_as(HttpUrl, "https://jira.invalid/"),
+        email="user@domain.invalid",
+        jira_token="magic",
+        tempo_token="",
+        project_key="",
+    )
     with patch("jira_timemachine.get_client") as mock_get_client:
         mock_get_client.return_value.get_worklogs.return_value = iter(old_sample_worklogs + recent_sample_worklogs)
         assert list(get_worklogs(config, arrow.get("2018-11-16"), all_users)) == recent_sample_worklogs
