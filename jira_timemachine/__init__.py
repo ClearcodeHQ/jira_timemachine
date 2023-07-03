@@ -192,7 +192,7 @@ class BaseJIRAClient:
 
     def __init__(self, config: BaseJiraConfig) -> None:
         """Initialize with credentials from the *config* dict."""
-        self._jira = JIRA(config.url, basic_auth=(config.email, config.jira_token))
+        self._jira = JIRA(str(config.url), basic_auth=(config.email, config.jira_token))
         self.account_id: str = self._jira.myself()["accountId"]
 
 
@@ -325,7 +325,7 @@ def match_worklog(source_worklogs: Dict[int, Worklog], worklog: Worklog) -> Opti
 def get_config(ctx: click.Context, param: click.Parameter, value: IO[str]) -> Config:
     """Return a `Config` instance from the given file object."""
     try:
-        return Config.parse_raw(value.read())
+        return Config.model_validate_json(value.read())
     except ValidationError as ex:
         raise click.BadParameter(str(ex))
 

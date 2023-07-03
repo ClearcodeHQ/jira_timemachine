@@ -29,7 +29,7 @@ dependencies = [
     "Click>=8.0.1",
     "types-click>=7.1.0",
     "jira>=3.0.1",
-    "pydantic>=1.8.2",
+    "pydantic>=2",
     "requests>=2.25.1",
     "types-requests>=0.1.9",
 ]
