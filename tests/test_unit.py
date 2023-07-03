@@ -7,7 +7,8 @@ from unittest.mock import patch, call, Mock
 import arrow
 import click
 import pytest
-from pydantic import HttpUrl, parse_obj_as
+from pydantic import HttpUrl, parse_obj_as, TypeAdapter
+from pydantic_core import Url
 
 from jira_timemachine import Worklog, get_worklogs, format_time, match_worklog, SourceJiraConfig, get_config
 
@@ -42,6 +43,7 @@ def test_worklog_to_tempo():
 )
 def test_get_worklogs(all_users, single_user):
     """Test that get_worklogs performs proper calls and filters worklogs by date."""
+    url_adapter: TypeAdapter[HttpUrl] = TypeAdapter(HttpUrl)
     old_sample_worklogs = [
         Worklog(
             id=1, tempo_id=2, started=arrow.get("2018-11-10"), time_spent_seconds=1, description="", author="", issue=""
@@ -77,7 +79,7 @@ def test_get_worklogs(all_users, single_user):
         ),
     ]
     config = SourceJiraConfig(
-        url=parse_obj_as(HttpUrl, "https://jira.invalid/"),
+        url=url_adapter.validate_python("https://jira.invalid/"),
         email="user@domain.invalid",
         jira_token="magic",
         tempo_token="",
@@ -170,12 +172,12 @@ def test_get_config_ok():
 }"""
     )
     config = get_config(Mock(), Mock(), config_file)
-    assert config.source_jira.url == "https://source.atlassian.net"
+    assert config.source_jira.url == Url("https://source.atlassian.net")
     assert config.source_jira.email == "login@login.com"
     assert config.source_jira.jira_token == "a"
     assert config.source_jira.project_key == "JIRA"
     assert config.source_jira.tempo_token == "b"
-    assert config.destination_jira.url == "https://destination.atlassian.net"
+    assert config.destination_jira.url == Url("https://destination.atlassian.net")
     assert config.destination_jira.email == "login@login.com"
     assert config.destination_jira.jira_token == "c"
     assert config.destination_jira.issue == "ARIJ-3"
@@ -209,7 +211,10 @@ def test_get_config_invalid():
     with pytest.raises(click.BadParameter) as exc_info:
         get_config(Mock(), Mock(), config_file)
 
-    assert (
-        exc_info.value.message
-        == "1 validation error for Config\nsource_jira -> jira_token\n  field required (type=value_error.missing)"
+    assert exc_info.value.message == (
+        "1 validation error for Config\n"
+        "source_jira.jira_token\n  "
+        "Field required "
+        "[type=missing, input_value={'url': 'https://source.a...RA', 'tempo_token': 'b'}, input_type=dict]\n"
+        "    For further information visit https://errors.pydantic.dev/2.0.1/v/missing"
     )
