@@ -7,17 +7,13 @@
 
 """Module for synchronization of Jira worklogs between different instances."""
 
-import copy
 import re
 import itertools
-import json
 from datetime import date, timedelta
-import time
 from dataclasses import dataclass
-from typing import Iterator, Dict, List, IO, TypeVar, Callable, Optional, Tuple, Union
+from typing import Iterator, Dict, IO, Optional, Tuple, Union
 
 import click
-from click import ClickException
 import arrow
 from jira import JIRA
 import jira
@@ -327,7 +323,12 @@ def get_config(ctx: click.Context, param: click.Parameter, value: IO[str]) -> Co
     try:
         return Config.model_validate_json(value.read())
     except ValidationError as ex:
-        raise click.BadParameter(str(ex))
+        errors = ex.errors(include_url=False)
+        error_msg = f"{ex.error_count()} validation error for {ex.title}\n"
+        for error in errors:
+            loc = ".".join((str(el) for el in error["loc"]))
+            error_msg += f"{loc} - {error['msg']}\n"
+        raise click.BadParameter(error_msg)
 
 
 @click.command()

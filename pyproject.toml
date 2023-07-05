@@ -101,7 +101,7 @@ showcontent = true
 
 [tool.towncrier.fragment.misc]
 name = "Miscellaneus"
-showcontent = true
+showcontent = false
 
 [tool.pytest.ini_options]
 xfail_strict = true
