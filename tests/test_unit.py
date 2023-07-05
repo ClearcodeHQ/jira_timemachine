@@ -211,10 +211,4 @@ def test_get_config_invalid():
     with pytest.raises(click.BadParameter) as exc_info:
         get_config(Mock(), Mock(), config_file)
 
-    assert exc_info.value.message == (
-        "1 validation error for Config\n"
-        "source_jira.jira_token\n  "
-        "Field required "
-        "[type=missing, input_value={'url': 'https://source.a...RA', 'tempo_token': 'b'}, input_type=dict]\n"
-        "    For further information visit https://errors.pydantic.dev/2.0.1/v/missing"
-    )
+    assert exc_info.value.message == ("1 validation error for Config\n" "source_jira.jira_token - Field required\n")
