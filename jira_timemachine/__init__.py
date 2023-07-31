@@ -215,7 +215,7 @@ class JIRAClient(BaseJIRAClient):
                 json_result=False,
             )
             # We do not return json response.
-            assert type(search_results) == ResultList
+            assert isinstance(search_results, ResultList)
             for issue in search_results:
                 yield issue
             issue_index += max_results
