@@ -2,15 +2,15 @@
 
 from datetime import date
 from io import StringIO
-from unittest.mock import patch, call, Mock
+from unittest.mock import Mock, call, patch
 
 import arrow
 import click
 import pytest
-from pydantic import HttpUrl, parse_obj_as, TypeAdapter
+from pydantic import HttpUrl, TypeAdapter
 from pydantic_core import Url
 
-from jira_timemachine import Worklog, get_worklogs, format_time, match_worklog, SourceJiraConfig, get_config
+from jira_timemachine import SourceJiraConfig, Worklog, format_time, get_config, get_worklogs, match_worklog
 
 
 def test_worklog_to_tempo():
