@@ -7,19 +7,19 @@
 
 """Module for synchronization of Jira worklogs between different instances."""
 
-import re
 import itertools
-from datetime import date, timedelta
+import re
 from dataclasses import dataclass
-from typing import Iterator, Dict, IO, Optional, Tuple, Union
+from datetime import date, timedelta
+from typing import IO, Dict, Iterator, Optional, Tuple, Union
 
-import click
 import arrow
-from jira import JIRA
+import click
 import jira
-from jira.client import ResultList
-from pydantic import BaseModel, HttpUrl, Field, ValidationError
 import requests
+from jira import JIRA
+from jira.client import ResultList
+from pydantic import BaseModel, Field, HttpUrl, ValidationError
 from requests import HTTPError
 
 __version__ = "1.0.1"
@@ -98,8 +98,7 @@ class Worklog:
 
 
 class TempoClient:
-    """
-    A client for Tempo Cloud APIs.
+    """A client for Tempo Cloud APIs.
 
     See <https://tempo-io.github.io/tempo-api-docs/> for the API documentation.
     """
@@ -111,8 +110,7 @@ class TempoClient:
         self.session.headers.update({"Authorization": "Bearer %s" % tempo_token})
 
     def get_worklogs(self, from_date: date, single_user: bool = True) -> Iterator[Worklog]:
-        """
-        Return all recent worklogs for the specified user.
+        """Return all recent worklogs for the specified user.
 
         :returns: yields Worklog instances
         """
@@ -156,8 +154,7 @@ class TempoClient:
             url = response_data["metadata"].get("next")
 
     def update_worklog(self, worklog: Worklog) -> None:
-        """
-        Update the specified worklog.
+        """Update the specified worklog.
 
         :param worklog: updated worklog data
         """
@@ -171,8 +168,7 @@ class TempoClient:
             raise
 
     def post_worklog(self, worklog: Worklog) -> None:
-        """
-        Upload a new worklog.
+        """Upload a new worklog.
 
         :param worklog: new worklog data
         """
@@ -223,8 +219,7 @@ class JIRAClient(BaseJIRAClient):
                 return
 
     def get_worklogs(self, from_date: date, single_user: bool = True) -> Iterator[Worklog]:
-        """
-        Return all recent worklogs for the specified user.
+        """Return all recent worklogs for the specified user.
 
         :returns: yields Worklog instances
         """
@@ -258,8 +253,7 @@ def get_client(config: SourceJiraConfig) -> Union[TempoClient, JIRAClient]:
 
 
 def get_worklogs(config: SourceJiraConfig, since: arrow.Arrow, all_users: bool = False) -> Iterator[Worklog]:
-    """
-    Yield user's recent worklogs.
+    """Yield user's recent worklogs.
 
     :param config: JIRA configuration
     :param since: earliest start time of yielded worklogs
@@ -276,8 +270,7 @@ def get_worklogs(config: SourceJiraConfig, since: arrow.Arrow, all_users: bool =
 
 
 def format_time(seconds: int) -> str:
-    """
-    Return *seconds* in a human-readable format (e.g. 25h 15m 45s).
+    """Return *seconds* in a human-readable format (e.g. 25h 15m 45s).
 
     Unlike `timedelta`, we don't aggregate it into days: it's not useful when reporting logged work hours.
     """
@@ -298,8 +291,7 @@ AUTO_WORKLOG = re.compile(r"TIMEMACHINE_WID (?P<id>\d+).*")
 
 
 def match_worklog(source_worklogs: Dict[int, Worklog], worklog: Worklog) -> Optional[Worklog]:
-    """
-    Return a matching source worklog for the given destination worklog.
+    """Return a matching source worklog for the given destination worklog.
 
     :param source_worklogs: a mapping from source JIRA worklog ID to `Worklog` instance
     :param worklog: destination JIRA worklog

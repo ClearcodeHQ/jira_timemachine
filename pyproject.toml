@@ -67,6 +67,17 @@ line-length = 120
 target-version = ['py310']
 include = '.*\.pyi?$'
 
+[tool.ruff]
+# Decrease the maximum line length to 79 characters.
+line-length = 120
+select = [
+    "E",   # pycodestyle
+    "F",   # pyflakes
+    "I",   # isort
+    "D",   # pydocstyle
+]
+
+
 [tool.mypy]
 check_untyped_defs = true
 mypy_path = "src"

@@ -15,10 +15,8 @@ import sys
 #
 # All configuration values have a default; values that are commented out
 # serve to show the default.
-
 from pathlib import Path
-from typing import List, Dict
-
+from typing import Dict, List
 
 p = Path(os.getcwd())
 sys.path.append(str(p.parent.parent))
