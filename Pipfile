@@ -15,7 +15,7 @@ types-requests = "==2.31.0.10"
 [dev-packages]
 towncrier = "==23.6.0"
 mypy = "==1.6.1"
-black = "==23.10.0"
+black = "==23.10.1"
 pytest = "==7.4.2"
 pytest-cov = "==4.1.0"
 tbump = "==6.11.0"
