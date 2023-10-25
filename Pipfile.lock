@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "85b205e03ac064375755c5b31dd6a65ef96291e60b213e7c65769a0b9b86faf1"
+            "sha256": "e0c3eee90ad42e807704fc2d0769ffb75fb9bf131697c0ea6786b8401f9cf023"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -551,14 +551,6 @@
             "markers": "python_version >= '3.7'",
             "version": "==8.1.7"
         },
-        "click-default-group": {
-            "hashes": [
-                "sha256:9b60486923720e7fc61731bdb32b617039aba820e22e1c88766b1125592eaa5f",
-                "sha256:eb3f3c99ec0d456ca6cd2a7f08f7d4e91771bef51b01bdd9580cc6450fe1251e"
-            ],
-            "markers": "python_version >= '2.7'",
-            "version": "==1.2.4"
-        },
         "colorama": {
             "hashes": [
                 "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44",
@@ -1058,12 +1050,12 @@
         },
         "towncrier": {
             "hashes": [
-                "sha256:da552f29192b3c2b04d630133f194c98e9f14f0558669d427708e203fea4d0a5",
-                "sha256:fc29bd5ab4727c8dacfbe636f7fb5dc53b99805b62da1c96b214836159ff70c1"
+                "sha256:8754e96264b55beca526a8ee77a3cc7b2170cfb2411f53eb6ac42e183ac96a17",
+                "sha256:bc633438cb218e3c1fb502e8cd5d78fe7429276fa791ae36f6c8017fdbabb905"
             ],
             "index": "pypi",
-            "markers": "python_version >= '3.7'",
-            "version": "==23.6.0"
+            "markers": "python_version >= '3.8'",
+            "version": "==23.10.0"
         },
         "typing-extensions": {
             "hashes": [
