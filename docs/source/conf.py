@@ -1,4 +1,5 @@
 """Sphinx docs configuration module."""
+
 import os
 import sys
 
