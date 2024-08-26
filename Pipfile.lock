@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "f264c1793bbaab2bd3336e568e6ebe85a4fc7176a19d21dd478bf45c64e1988d"
+            "sha256": "30ec7e9c6b816bdf7eeed4259ecccb6a23a574d8646b3daec8367ad5ea059e08"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -1399,12 +1399,12 @@
         },
         "towncrier": {
             "hashes": [
-                "sha256:57a057faedabcadf1a62f6f9bad726ae566c1f31a411338ddb8316993f583b3d",
-                "sha256:685e2a94335b5dc47537b4d3b449a25b18571ea85b07dcf6e8df31ba40f692dd"
+                "sha256:013423ee7eed102b2f393c287d22d95f66f1a3ea10a4baa82d298001a7f18af3",
+                "sha256:9343209592b839209cdf28c339ba45792fbfe9775b5f9c177462fd693e127d8d"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.8'",
-            "version": "==24.7.1"
+            "version": "==24.8.0"
         },
         "typing-extensions": {
             "hashes": [
