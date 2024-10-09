@@ -1,6 +1,9 @@
 /example_config/*.json
 *.py[cod]
 
+# Pipfile
+Pipfile.lock
+
 # C extensions
 *.so
 
