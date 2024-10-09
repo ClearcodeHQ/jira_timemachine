@@ -1,1 +1,0 @@
-Updated SourceJiraConfig creation in tests to satisfy mypy checks.

@@ -1,6 +1,6 @@
 [project]
 name = "jira_timemachine"
-version = "1.0.1"
+version = "1.1.0"
 description = "Synchronize worklogs between Jira instances"
 readme = "README.rst"
 keywords = ["jira", "worklog", "timesheet"]
@@ -37,7 +37,7 @@ dependencies = [
 [project.urls]
 "Source" = "https://github.com/ClearcodeHQ/jira_timemachine"
 "Bug Tracker" = "https://github.com/ClearcodeHQ/jira_timemachine/issues"
-"Changelog" = "https://github.com/ClearcodeHQ/jira_timemachine/blob/v1.0.1/CHANGES.rst"
+"Changelog" = "https://github.com/ClearcodeHQ/jira_timemachine/blob/v1.1.0/CHANGES.rst"
 "Documentation" = "https://clearcodehq.github.io/jira_timemachine/"
 
 [project.optional-dependencies]
@@ -127,7 +127,7 @@ filterwarnings = [
 # github_url = "https://github.com/<user or organization>/<project>/"
 
 [tool.tbump.version]
-current = "1.0.1"
+current = "1.1.0"
 
 # Example of a semver regexp.
 # Make sure this matches current_version before

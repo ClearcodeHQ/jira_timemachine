@@ -3,6 +3,38 @@ CHANGELOG
 
 .. towncrier release notes start
 
+1.1.0 (2024-10-09)
+==================
+
+Breaking changes
+----------------
+
+- Drop Support for Python 3.9 (`#338 <https://https://github.com/ClearcodeHQ/jira_timemachine/issues/338>`_)
+- Drop support for Python 3.10
+
+
+Bugfixes
+--------
+
+- Updated SourceJiraConfig creation in tests to satisfy mypy checks. (`#247 <https://https://github.com/ClearcodeHQ/jira_timemachine/issues/247>`_)
+
+
+Features
+--------
+
+- Migrated code to pydantic 2 (`#284 <https://https://github.com/ClearcodeHQ/jira_timemachine/issues/284>`_)
+- Generate error message in config validator instead of relying on pydantic
+      - it adds additional clutter like pydantic documentation url and is hard to test. (`#286 <https://https://github.com/ClearcodeHQ/jira_timemachine/issues/286>`_)
+- Add support for Python 3.12 (`#338 <https://https://github.com/ClearcodeHQ/jira_timemachine/issues/338>`_)
+- Added support for Python 3.13
+
+
+Miscellaneus
+------------
+
+- `#268 <https://https://github.com/ClearcodeHQ/jira_timemachine/issues/268>`_, `#285 <https://https://github.com/ClearcodeHQ/jira_timemachine/issues/285>`_, `#385 <https://https://github.com/ClearcodeHQ/jira_timemachine/issues/385>`_
+
+
 1.0.1 (2023-02-21)
 ==================
 

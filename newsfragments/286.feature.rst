@@ -1,2 +1,0 @@
-Generate error message in config validator instead of relying on pydantic
-    - it adds additional clutter like pydantic documentation url and is hard to test.
