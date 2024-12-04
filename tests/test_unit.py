@@ -8,7 +8,6 @@ import arrow
 import click
 import pytest
 from pydantic import HttpUrl, TypeAdapter
-from pydantic_core import Url
 
 from jira_timemachine import SourceJiraConfig, Worklog, format_time, get_config, get_worklogs, match_worklog
 
@@ -172,12 +171,12 @@ def test_get_config_ok():
 }"""
     )
     config = get_config(Mock(), Mock(), config_file)
-    assert config.source_jira.url == Url("https://source.atlassian.net")
+    assert config.source_jira.url == HttpUrl("https://source.atlassian.net")
     assert config.source_jira.email == "login@login.com"
     assert config.source_jira.jira_token == "a"
     assert config.source_jira.project_key == "JIRA"
     assert config.source_jira.tempo_token == "b"
-    assert config.destination_jira.url == Url("https://destination.atlassian.net")
+    assert config.destination_jira.url == HttpUrl("https://destination.atlassian.net")
     assert config.destination_jira.email == "login@login.com"
     assert config.destination_jira.jira_token == "c"
     assert config.destination_jira.issue == "ARIJ-3"
