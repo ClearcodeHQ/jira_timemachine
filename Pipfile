@@ -10,7 +10,7 @@ types-click = "==7.1.8"
 jira = "==3.10.5"
 pydantic = "==2.11.7"
 requests = "==2.32.4"
-types-requests = "==2.32.4.20250611"
+types-requests = "==2.32.4.20250809"
 
 [dev-packages]
 towncrier = "==24.8.0"
