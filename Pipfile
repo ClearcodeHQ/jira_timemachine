@@ -8,7 +8,7 @@ arrow = "==1.4.0"
 click = "==8.3.0"
 types-click = "==7.1.8"
 jira = "==3.10.5"
-pydantic = "==2.12.2"
+pydantic = "==2.12.3"
 requests = "==2.32.5"
 types-requests = "==2.32.4.20250913"
 
