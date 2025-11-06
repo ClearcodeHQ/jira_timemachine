@@ -3,8 +3,8 @@ CHANGELOG
 
 .. towncrier release notes start
 
-jira_timemachine 1.2.0 (2025-11-06)
-===================================
+1.2.0 (2025-11-06)
+==================
 
 Features
 --------
