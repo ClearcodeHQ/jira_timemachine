@@ -3,6 +3,23 @@ CHANGELOG
 
 .. towncrier release notes start
 
+jira_timemachine 1.2.0 (2025-11-06)
+===================================
+
+Features
+--------
+
+- Add support to python 3.14
+
+
+Miscellaneus
+------------
+
+- Adjust workflows for actions-reuse 3
+- Replace linters with pre-commit
+- Updated tests for new Pydantic.
+
+
 1.1.0 (2024-10-09)
 ==================
 
