@@ -4,7 +4,10 @@ WORKDIR /usr/src/app
 # Install required dependencies and cache test dependencies, so they won't be redownloaded when updating after the code
 # is changed. (We cannot use setup.py here, since it requires other files from this package.)
 COPY pyproject.toml .
-COPY jira_timemachine .
+COPY MANIFEST.in .
+COPY LICENSE .
+COPY README.rst .
+COPY jira_timemachine ./jira_timemachine/
 RUN pip install build && python -m build .
 
 FROM python:3.14.0-slim AS app
