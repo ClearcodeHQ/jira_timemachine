@@ -3,15 +3,6 @@ CHANGELOG
 
 .. towncrier release notes start
 
-<version> (<date>)
-==================
-
-Bugfixes
---------
-
-- Fix Dockerfile's casing
-
-
 1.2.1 (2025-11-06)
 ==================
 
