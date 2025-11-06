@@ -22,7 +22,7 @@ from jira.client import ResultList
 from pydantic import BaseModel, Field, HttpUrl, ValidationError
 from requests import HTTPError
 
-__version__ = "1.2.0"
+__version__ = "1.2.1"
 
 
 class BaseJiraConfig(BaseModel):
