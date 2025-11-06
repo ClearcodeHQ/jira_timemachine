@@ -210,4 +210,4 @@ def test_get_config_invalid():
     with pytest.raises(click.BadParameter) as exc_info:
         get_config(Mock(), Mock(), config_file)
 
-    assert exc_info.value.message == ("1 validation error for Config\n" "source_jira.jira_token - Field required\n")
+    assert exc_info.value.message == ("1 validation error for Config\nsource_jira.jira_token - Field required\n")
