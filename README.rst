@@ -7,7 +7,7 @@ updates already copied worklogs instead of duplicating them.
 
 To re-write your worklog for the last three days from one JIRA to another, use timemachine command:
 
-.. code-block::
+.. code-block:: bash
 
     timemachine --config example_config/config.json --days 3
 
