@@ -9,23 +9,23 @@ CHANGELOG
 Breaking changes
 ----------------
 
-- Drop Support for Python 3.9 (`#338 <https://https://github.com/ClearcodeHQ/jira_timemachine/issues/338>`_)
+- Drop Support for Python 3.9 (`#338 <https://https://github.com/ClearcodeHQ/jira_timemachine/issues/338>`__)
 - Drop support for Python 3.10
 
 
 Bugfixes
 --------
 
-- Updated SourceJiraConfig creation in tests to satisfy mypy checks. (`#247 <https://https://github.com/ClearcodeHQ/jira_timemachine/issues/247>`_)
+- Updated SourceJiraConfig creation in tests to satisfy mypy checks. (`#247 <https://https://github.com/ClearcodeHQ/jira_timemachine/issues/247>`__)
 
 
 Features
 --------
 
-- Migrated code to pydantic 2 (`#284 <https://https://github.com/ClearcodeHQ/jira_timemachine/issues/284>`_)
+- Migrated code to pydantic 2 (`#284 <https://https://github.com/ClearcodeHQ/jira_timemachine/issues/284>`__)
 - Generate error message in config validator instead of relying on pydantic
-      - it adds additional clutter like pydantic documentation url and is hard to test. (`#286 <https://https://github.com/ClearcodeHQ/jira_timemachine/issues/286>`_)
-- Add support for Python 3.12 (`#338 <https://https://github.com/ClearcodeHQ/jira_timemachine/issues/338>`_)
+      - it adds additional clutter like pydantic documentation url and is hard to test. (`#286 <https://https://github.com/ClearcodeHQ/jira_timemachine/issues/286>`__)
+- Add support for Python 3.12 (`#338 <https://https://github.com/ClearcodeHQ/jira_timemachine/issues/338>`__)
 - Added support for Python 3.13
 
 
@@ -41,24 +41,24 @@ Miscellaneus
 Breaking changes
 ----------------
 
-- Drop support for python 3.8 (`#224 <https://https://github.com/ClearcodeHQ/jira_timemachine/issues/224>`_)
+- Drop support for python 3.8 (`#224 <https://https://github.com/ClearcodeHQ/jira_timemachine/issues/224>`__)
 
 
 Features
 --------
 
-- Upload documentation to github-pages. (`#65 <https://https://github.com/ClearcodeHQ/jira_timemachine/issues/65>`_)
-- Support Python 3.11 (`#224 <https://https://github.com/ClearcodeHQ/jira_timemachine/issues/224>`_)
+- Upload documentation to github-pages. (`#65 <https://https://github.com/ClearcodeHQ/jira_timemachine/issues/65>`__)
+- Support Python 3.11 (`#224 <https://https://github.com/ClearcodeHQ/jira_timemachine/issues/224>`__)
 
 
 Miscellaneus
 ------------
 
-- Use towncrier to manage newsfragments and changelog. (`#222 <https://https://github.com/ClearcodeHQ/jira_timemachine/issues/222>`_)
-- Migrate dependency management to pipenv (`#223 <https://https://github.com/ClearcodeHQ/jira_timemachine/issues/223>`_)
-- Migrate the automerge pipeline to the shared one. Requiring github app to authenticate. (`#225 <https://https://github.com/ClearcodeHQ/jira_timemachine/issues/225>`_)
-- Migrate version management tool to tbump (`#226 <https://https://github.com/ClearcodeHQ/jira_timemachine/issues/226>`_)
-- Migrate package configuration to pyproject.toml (`#231 <https://https://github.com/ClearcodeHQ/jira_timemachine/issues/231>`_)
+- Use towncrier to manage newsfragments and changelog. (`#222 <https://https://github.com/ClearcodeHQ/jira_timemachine/issues/222>`__)
+- Migrate dependency management to pipenv (`#223 <https://https://github.com/ClearcodeHQ/jira_timemachine/issues/223>`__)
+- Migrate the automerge pipeline to the shared one. Requiring github app to authenticate. (`#225 <https://https://github.com/ClearcodeHQ/jira_timemachine/issues/225>`__)
+- Migrate version management tool to tbump (`#226 <https://https://github.com/ClearcodeHQ/jira_timemachine/issues/226>`__)
+- Migrate package configuration to pyproject.toml (`#231 <https://https://github.com/ClearcodeHQ/jira_timemachine/issues/231>`__)
 
 
 1.0.0

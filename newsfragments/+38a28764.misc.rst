@@ -1,0 +1,1 @@
+Replace linters with pre-commit
