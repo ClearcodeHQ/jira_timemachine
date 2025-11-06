@@ -3,6 +3,21 @@ CHANGELOG
 
 .. towncrier release notes start
 
+1.2.2 (2025-11-06)
+==================
+
+Bugfixes
+--------
+
+- Fixing docker and packaging
+
+
+Miscellaneus
+------------
+
+- Updates to pre-commit and rstcheck config.
+
+
 1.2.1 (2025-11-06)
 ==================
 
