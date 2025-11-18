@@ -5,7 +5,7 @@ name = "pypi"
 
 [packages]
 arrow = "==1.4.0"
-click = "==8.3.0"
+click = "==8.3.1"
 types-click = "==7.1.8"
 jira = "==3.10.5"
 pydantic = "==2.12.4"
