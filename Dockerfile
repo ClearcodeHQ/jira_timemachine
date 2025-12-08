@@ -1,4 +1,4 @@
-FROM python:3.14.0-slim AS builder
+FROM python:3.14.1-slim AS builder
 
 WORKDIR /usr/src/app
 # Install required dependencies and cache test dependencies, so they won't be redownloaded when updating after the code
@@ -10,6 +10,6 @@ COPY README.rst .
 COPY jira_timemachine ./jira_timemachine/
 RUN pip install build && python -m build .
 
-FROM python:3.14.0-slim AS app
+FROM python:3.14.1-slim AS app
 COPY --from=builder /usr/src/app/dist/jira_timemachine-*.whl .
 RUN pip install jira_timemachine-*.whl
